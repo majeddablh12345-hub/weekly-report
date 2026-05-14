@@ -1,0 +1,4465 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>التقرير الأسبوعي للطلاب</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+<!-- Firebase v9 compat — يعمل كسكريبت عادي بدون modules على الجوال -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  window._firebaseReady = false;
+  window._db   = null;
+  window._auth = null;
+
+  var FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyCpCI2aDPZYukM-hfLWyRVFIpB28OtlKH8",
+    authDomain:        "week-20877.firebaseapp.com",
+    projectId:         "week-20877",
+    storageBucket:     "week-20877.firebasestorage.app",
+    messagingSenderId: "509631180286",
+    appId:             "1:509631180286:web:c2a4769a411453cdd464af",
+    measurementId:     "G-Y79L8WMZ5M"
+  };
+
+  try {
+    localStorage.setItem('fb_config', JSON.stringify(FIREBASE_CONFIG));
+    if (!firebase.apps.length) { firebase.initializeApp(FIREBASE_CONFIG); }
+    window._auth = firebase.auth();
+    window._db   = firebase.firestore();
+    window._firebaseReady = true;
+    console.log('✅ Firebase v9-compat: متصل بنجاح');
+  } catch(e) {
+    window._firebaseReady = false;
+    console.error('❌ Firebase خطأ:', e.message);
+  }
+</script>
+
+<style>
+  :root {
+    --primary: #1a3c5e;
+    --accent: #c8a94e;
+    --success: #27ae60;
+    --danger: #e74c3c;
+    --new-week: #7c3aed;
+    --bg: #f4f1eb;
+    --card: #ffffff;
+    --border: #d9d0c0;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px;
+    background-image: repeating-linear-gradient(
+      0deg, transparent, transparent 39px,
+      rgba(200,169,78,0.08) 39px, rgba(200,169,78,0.08) 40px
+    );
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding: 28px;
+    background: var(--primary);
+    border-radius: 16px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 120px; height: 120px;
+    background: var(--accent);
+    opacity: 0.15;
+    border-radius: 50%;
+  }
+  .page-header h1 {
+    font-size: 1.6rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .page-header .subtitle { font-size: 0.9rem; opacity: 0.8; }
+
+  .meta-section {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .meta-field.full-width {
+    grid-column: 1 / -1;
+  }
+  .week-number-inline {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--accent);
+    border-radius: 8px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.9rem;
+    background: linear-gradient(135deg, #fffbf0 0%, #fdf6e3 100%);
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    direction: rtl;
+    gap: 8px;
+    box-shadow: 0 1px 6px rgba(200,169,78,0.10);
+  }
+  .week-number-inline:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(200,169,78,0.15);
+  }
+  .week-number-inline .wni-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    color: var(--accent);
+  }
+  .week-number-inline input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary);
+    direction: rtl;
+    outline: none;
+    min-width: 0;
+  }
+  .week-number-inline input::placeholder {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .week-number-inline .wni-hash {
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 900;
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+  .meta-field label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .meta-field input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.9rem;
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color 0.2s;
+    direction: rtl;
+  }
+  .meta-field input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .students-section { margin-bottom: 24px; }
+
+
+
+  /* ── Students Toolbar ── */
+  .students-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .toolbar-row-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .toolbar-row-bottom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .toolbar-search {
+    flex: 1;
+    min-width: 160px;
+    padding: 8px 12px 8px 36px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem;
+    background: var(--card);
+    color: var(--text);
+    direction: rtl;
+    transition: border-color 0.2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 10px center;
+  }
+  .toolbar-search:focus { outline: none; border-color: var(--accent); }
+  .sort-btn {
+    padding: 8px 13px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--primary);
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .sort-btn:hover { border-color: var(--accent); background: #fdf6e3; }
+  .sort-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(to left, transparent, var(--accent));
+  }
+
+  .student-card {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+  .student-card:hover { box-shadow: 0 4px 20px rgba(26,60,94,0.1); }
+
+  .student-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, var(--primary) 0%, #1e4d7a 100%);
+    color: white;
+  }
+  .student-name { font-weight: 700; font-size: 1rem; }
+  .student-pages { font-size: 0.8rem; opacity: 0.85; }
+
+  .days-table { width: 100%; border-collapse: collapse; }
+  .days-table th {
+    background: #f8f6f0;
+    padding: 10px 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-align: center;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .days-table th:first-child { text-align: right; padding-right: 16px; }
+  .days-table td {
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #f0ece3;
+  }
+  .days-table td:first-child {
+    text-align: right;
+    padding-right: 16px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .days-table tr:last-child td { border-bottom: none; }
+  .days-table tr:hover td { background: #fafaf7; }
+
+  .check-group { display: flex; justify-content: center; align-items: center; }
+  .check-btn {
+    width: 34px; height: 34px;
+    border: 2px solid;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all 0.15s;
+    background: none;
+  }
+  .check-btn.pass {
+    border-color: var(--success);
+    background: #eafaf1;
+    color: var(--success);
+  }
+  .check-btn.fail {
+    border-color: var(--danger);
+    background: #fdecea;
+    color: var(--danger);
+  }
+  .check-btn.excuse {
+    border-color: #16a34a;
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 0.85rem;
+  }
+
+  .add-student-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+    align-items: flex-end;
+  }
+  .add-student-section .meta-field { flex: 1; }
+  .add-student-section .meta-field:nth-child(3) { flex: 0.6; }
+  .btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: #22517a; transform: translateY(-1px); }
+  .btn-accent {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-accent:hover { background: #b8963e; }
+  .btn-new-week {
+    background: var(--new-week);
+    color: white;
+    white-space: nowrap;
+  }
+  .btn-new-week:hover { background: #6d28d9; transform: translateY(-1px); }
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1.5px solid var(--danger);
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+  .btn-danger:hover { background: #fdecea; }
+  .btn-edit {
+    background: transparent;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+  .btn-edit:hover { background: #fdf6e3; }
+
+  /* ── Edit Student Modal ── */
+  .edit-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 2500;
+    align-items: center;
+    justify-content: center;
+  }
+  .edit-modal-box {
+    background: white;
+    border-radius: 16px;
+    padding: 28px;
+    width: 92vw;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .edit-modal-title {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--primary);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .edit-field {
+    margin-bottom: 14px;
+  }
+  .edit-field label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .edit-field input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.9rem;
+    background: var(--bg);
+    color: var(--text);
+    direction: rtl;
+    transition: border-color 0.2s;
+  }
+  .edit-field input:focus { outline: none; border-color: var(--accent); }
+  .edit-modal-actions { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+
+  .actions-bar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .pages-input {
+    width: 60px;
+    padding: 6px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem;
+    text-align: center;
+    background: var(--bg);
+    direction: ltr;
+  }
+  .pages-input:focus { outline: none; border-color: var(--accent); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 10px; }
+
+  .summary-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .chip-pass { background: #eafaf1; color: var(--success); }
+  .chip-fail { background: #fdecea; color: var(--danger); }
+  .chip-excuse { background: #dcfce7; color: #15803d; }
+
+  .perf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .perf-badge.excellent { background: #eafaf1; color: #1e8449; border: 1.5px solid #a9dfbf; }
+  .perf-badge.average   { background: #fef9e7; color: #b7770d; border: 1.5px solid #f9e79f; }
+  .perf-badge.poor      { background: #fdecea; color: #c0392b; border: 1.5px solid #f5b7b1; }
+
+  .student-footer {
+    border-top: 2px solid var(--border);
+    background: #faf8f4;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .footer-label {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--primary);
+    white-space: nowrap;
+  }
+  .footer-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 180px;
+  }
+  .footer-field label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .footer-input {
+    flex: 1;
+    padding: 7px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem;
+    background: white;
+    color: var(--text);
+    direction: rtl;
+    transition: border-color 0.2s;
+  }
+  .footer-input:focus { outline: none; border-color: var(--accent); }
+  .footer-pages-num {
+    width: 52px;
+    padding: 5px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem;
+    text-align: center;
+    background: white;
+    direction: ltr;
+  }
+  .footer-pages-num:focus { outline: none; border-color: var(--accent); }
+  .footer-range-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .footer-range-sep {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .footer-pages-auto {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #15803d;
+    font-weight: 700;
+  }
+
+  /* ── Hijri Picker ── */
+  .hijri-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .hijri-picker {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    width: 320px;
+    max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .hp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .hp-nav {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cairo', sans-serif;
+    transition: background 0.2s;
+  }
+  .hp-nav:hover { background: var(--border); }
+  #hp-month-label { font-weight: 700; font-size: 1rem; color: var(--primary); }
+  .hp-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+  .hp-day {
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.8rem;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.15s;
+  }
+  .hp-day:hover { background: var(--border); }
+  .hp-today { background: var(--primary); color: white; font-weight: 700; }
+  .hp-close {
+    width: 100%;
+    padding: 8px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ── Toast notification ── */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--primary);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.35s ease;
+    white-space: nowrap;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── Confirm modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-box {
+    background: white;
+    border-radius: 16px;
+    padding: 32px 28px;
+    max-width: 380px;
+    width: 92vw;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-icon { font-size: 3rem; margin-bottom: 12px; }
+  .modal-title { font-size: 1.15rem; font-weight: 900; color: var(--primary); margin-bottom: 8px; }
+  .modal-desc { font-size: 0.88rem; color: var(--muted); margin-bottom: 24px; line-height: 1.7; }
+  .modal-actions { display: flex; gap: 12px; justify-content: center; }
+
+  /* ── Archive Panel ── */
+  .archive-panel {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .archive-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
+    color: white;
+    cursor: pointer;
+  }
+  .archive-header h3 { font-size: 0.95rem; font-weight: 700; }
+  .archive-toggle { font-size: 1.1rem; transition: transform 0.3s; }
+  .archive-toggle.open { transform: rotate(180deg); }
+  .archive-body { display: none; padding: 16px; }
+  .archive-body.open { display: block; }
+  .archive-list { display: flex; flex-direction: column; gap: 8px; }
+  .archive-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .archive-item:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .archive-item-info { display: flex; flex-direction: column; gap: 2px; }
+  .archive-item-title { font-weight: 700; font-size: 0.9rem; color: var(--primary); }
+  .archive-item-sub { font-size: 0.75rem; color: var(--muted); }
+  .archive-item-actions { display: flex; gap: 8px; }
+  .btn-archive-load {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1.5px solid #2d6a4f;
+    background: transparent;
+    color: #2d6a4f;
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-archive-load:hover { background: #2d6a4f; color: white; }
+  .btn-archive-del {
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--danger);
+    background: transparent;
+    color: var(--danger);
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-archive-del:hover { background: #fdecea; }
+  .archive-empty { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 20px; }
+
+  /* ── Monthly Report Modal ── */
+  .monthly-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .monthly-box {
+    background: white;
+    border-radius: 16px;
+    padding: 28px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .monthly-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--border);
+  }
+  .monthly-header h2 { font-size: 1.1rem; font-weight: 900; color: var(--primary); }
+  .monthly-close {
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .monthly-student-row {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border: 1.5px solid var(--border);
+  }
+  .monthly-student-name { font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+  .monthly-weeks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .monthly-week-chip {
+    background: white;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    border: 1.5px solid var(--border);
+  }
+  .monthly-week-chip .wc-title { font-weight: 700; color: var(--primary); margin-bottom: 4px; font-size: 0.7rem; }
+  .monthly-week-chip .wc-pass { color: var(--success); font-weight: 700; }
+  .monthly-week-chip .wc-pages { color: var(--muted); font-size: 0.7rem; }
+  .monthly-total {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+  }
+  .monthly-total span { font-weight: 700; }
+  .btn-monthly {
+    background: #1b4332;
+    color: white;
+    white-space: nowrap;
+  }
+  .btn-monthly:hover { background: #2d6a4f; transform: translateY(-1px); }
+  .monthly-select-section {
+    margin-bottom: 18px;
+    padding: 14px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+  }
+  .monthly-select-section label { font-weight: 700; font-size: 0.85rem; color: var(--primary); display: block; margin-bottom: 8px; }
+  .weeks-checkboxes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .week-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background: white;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .week-checkbox-label:hover { border-color: #2d6a4f; }
+  .week-checkbox-label input[type=checkbox] { accent-color: #2d6a4f; }
+  .week-checkbox-label.checked { border-color: #2d6a4f; background: #d8f3dc; color: #1b4332; }
+
+  /* ── Student Profile Modal ── */
+  .profile-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 4000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .profile-box {
+    background: white;
+    border-radius: 18px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+  }
+  .profile-hero {
+    background: linear-gradient(135deg, var(--primary) 0%, #1e4d7a 100%);
+    color: white;
+    padding: 24px 24px 20px;
+    border-radius: 18px 18px 0 0;
+    position: relative;
+  }
+  .profile-close {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: white;
+    border-radius: 8px;
+    width: 32px; height: 32px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .profile-close:hover { background: rgba(255,255,255,0.28); }
+  .profile-hero-name {
+    font-size: 1.25rem;
+    font-weight: 900;
+    margin-bottom: 4px;
+  }
+  .profile-hero-sub {
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+  .profile-badge-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .profile-hero-chip {
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+  .profile-body { padding: 20px 22px; flex: 1; }
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .profile-stat {
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    padding: 12px 14px;
+  }
+  .profile-stat-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .profile-stat-value {
+    font-size: 1rem;
+    font-weight: 900;
+    color: var(--primary);
+  }
+  .profile-stat-value.excellent { color: #1e8449; }
+  .profile-stat-value.average   { color: #b7770d; }
+  .profile-stat-value.poor      { color: #c0392b; }
+  .profile-section-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .profile-notes-area {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem;
+    background: var(--bg);
+    color: var(--text);
+    direction: rtl;
+    resize: vertical;
+    transition: border-color 0.2s;
+    margin-bottom: 18px;
+  }
+  .profile-notes-area:focus { outline: none; border-color: var(--accent); }
+  .profile-history { margin-top: 4px; }
+  .profile-week-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    font-size: 0.8rem;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .profile-week-range { font-weight: 700; color: var(--primary); flex: 1; }
+  .profile-week-pct {
+    font-weight: 900;
+    font-size: 0.85rem;
+    padding: 2px 10px;
+    border-radius: 14px;
+  }
+  .profile-week-pct.excellent { background: #eafaf1; color: #1e8449; }
+  .profile-week-pct.average   { background: #fef9e7; color: #b7770d; }
+  .profile-week-pct.poor      { background: #fdecea; color: #c0392b; }
+  .profile-week-pct.current   { background: #e8eaf6; color: #3949ab; }
+  .profile-week-pages { color: var(--muted); font-size: 0.75rem; }
+  .profile-no-history { text-align: center; color: var(--muted); font-size: 0.82rem; padding: 14px; }
+  .profile-best-worst {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .profile-bw-card {
+    flex: 1;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+    border: 1.5px solid var(--border);
+  }
+  .profile-bw-card.best  { background: #eafaf1; border-color: #a9dfbf; }
+  .profile-bw-card.worst { background: #fdecea; border-color: #f5b7b1; }
+  .profile-bw-label { font-weight: 700; margin-bottom: 3px; }
+  .profile-bw-card.best  .profile-bw-label { color: #1e8449; }
+  .profile-bw-card.worst .profile-bw-label { color: #c0392b; }
+  .profile-bw-val { font-weight: 900; font-size: 0.92rem; color: var(--primary); }
+
+  /* ── Profile Charts ── */
+  .profile-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .profile-chart-card {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .profile-chart-card.wide {
+    grid-column: 1 / -1;
+  }
+  .profile-chart-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-align: center;
+    letter-spacing: 0.3px;
+  }
+  .profile-chart-wrap {
+    position: relative;
+    height: 130px;
+  }
+  .profile-chart-wrap.tall {
+    height: 150px;
+  }
+  .chart-no-data {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  @media print {
+    body { background: white; background-image: none; padding: 10px; }
+    .no-print { display: none !important; }
+    .page-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .student-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .check-btn { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .days-table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .student-card { break-inside: avoid; }
+    .app-navbar { display: none !important; }
+  }
+
+  /* ── App Navbar ── */
+  .app-navbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--primary);
+    border-radius: 12px;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+  }
+  .nav-btn {
+    padding: 9px 22px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    color: rgba(255,255,255,0.75);
+  }
+  .nav-btn:hover {
+    background: rgba(255,255,255,0.12);
+    color: white;
+  }
+  .nav-btn.nav-active {
+    background: var(--accent);
+    color: white;
+    border-color: transparent;
+  }
+
+  /* ── Parts View Page ── */
+  #page-parts {
+    display: none;
+  }
+
+  .parts-table-wrap {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .parts-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .parts-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.78rem;
+  }
+
+  .parts-table thead tr {
+    background: linear-gradient(135deg, var(--primary) 0%, #1e4d7a 100%);
+    color: white;
+  }
+
+  .parts-th-name {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: var(--primary);
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+    min-width: 140px;
+    text-align: right;
+    border-left: 2px solid rgba(255,255,255,0.15);
+  }
+
+  .parts-table thead th {
+    padding: 10px 6px;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 90px;
+    border-left: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .parts-table tbody tr:nth-child(even) td { background: #faf8f4; }
+  .parts-table tbody tr:nth-child(even) .parts-td-name { background: #f0ece3; }
+  .parts-table tbody tr:hover td { background: #fdf6e3; }
+  .parts-table tbody tr:hover .parts-td-name { background: #f5efd5; }
+
+  .parts-td-name {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: white;
+    padding: 10px 16px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--primary);
+    white-space: nowrap;
+    border-left: 2px solid var(--border);
+    border-bottom: 1px solid #f0ece3;
+  }
+
+  .parts-table tbody td {
+    padding: 8px 6px;
+    text-align: center;
+    border-bottom: 1px solid #f0ece3;
+    border-left: 1px solid #f0ece3;
+    vertical-align: middle;
+  }
+
+  .parts-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+
+  .parts-check-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    transition: color 0.2s;
+  }
+
+  .parts-check-label input[type=checkbox] {
+    accent-color: var(--success);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+  }
+
+  .parts-check-label.done {
+    color: var(--success);
+    font-weight: 700;
+  }
+
+  /* ✅ تلوين الخلية بالكامل عند الإتمام */
+  td.part-done {
+    background: #eafaf1 !important;
+    border-color: #a9dfbf !important;
+  }
+  td.part-done .parts-cell {
+    background: transparent;
+  }
+  td.part-done .parts-score-input {
+    border-color: #a9dfbf;
+  }
+
+  .parts-score-input {
+    width: 54px;
+    padding: 4px 6px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.78rem;
+    text-align: center;
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color 0.2s;
+    direction: ltr;
+  }
+
+  .parts-score-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .parts-score-input.score-high  { background: #eafaf1; border-color: #a9dfbf; color: #1e8449; font-weight: 700; }
+  .parts-score-input.score-mid   { background: #fef9e7; border-color: #f9e79f; color: #b7770d; font-weight: 700; }
+  .parts-score-input.score-low   { background: #fdecea; border-color: #f5b7b1; color: #c0392b; font-weight: 700; }
+
+  .parts-empty {
+    display: none;
+    text-align: center;
+    padding: 50px 24px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  /* ── لوحة إحصائيات الأجزاء ── */
+  .parts-stats-panel {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .parts-stat-card {
+    background: var(--card);
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    padding: 16px 14px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(26,60,94,0.07);
+    transition: box-shadow 0.2s;
+  }
+  .parts-stat-card:hover { box-shadow: 0 4px 18px rgba(26,60,94,0.13); }
+  .parts-stat-icon { font-size: 1.6rem; margin-bottom: 6px; }
+  .parts-stat-value {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--primary);
+    margin-bottom: 2px;
+    line-height: 1.1;
+  }
+  .parts-stat-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .parts-stat-card.green .parts-stat-value { color: var(--success); }
+  .parts-stat-card.gold  .parts-stat-value { color: var(--accent); }
+  .parts-stat-card.blue  .parts-stat-value { color: var(--primary); }
+  .parts-stat-sub {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* ── أعمدة الإحصائيات في نهاية كل صف ── */
+  .parts-th-stat {
+    background: #162e48;
+    padding: 10px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 70px;
+    border-left: 1px solid rgba(255,255,255,0.15);
+    color: #c8e6fa;
+  }
+  .parts-td-stat {
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 8px 6px;
+    border-left: 1px solid #e8e2d6;
+    border-bottom: 1px solid #f0ece3;
+    white-space: nowrap;
+  }
+  .parts-td-stat.done-count { color: var(--success); }
+  .parts-td-stat.avg-score  { color: var(--primary); }
+  .parts-td-stat.progress   {}
+  .progress-bar-wrap {
+    width: 52px;
+    height: 6px;
+    background: #e8e2d6;
+    border-radius: 3px;
+    margin: 3px auto 0;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--success);
+    transition: width 0.4s ease;
+  }
+  .progress-pct {
+    font-size: 0.78rem;
+    font-weight: 900;
+  }
+  .pct-high  { color: var(--success); }
+  .pct-mid   { color: var(--accent); }
+  .pct-low   { color: var(--danger); }
+
+  @media (max-width: 480px) {
+    .parts-stats-panel { grid-template-columns: 1fr 1fr; }
+    .parts-stat-card:last-child { grid-column: 1 / -1; }
+  }
+
+
+  /* ── زر تصدير PDF ── */
+  .btn-export-pdf {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1.5px solid #c0392b;
+    background: transparent;
+    color: #c0392b;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .btn-export-pdf:hover {
+    background: #c0392b;
+    color: white;
+  }
+  .parts-th-export {
+    background: #162e48;
+    padding: 10px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 80px;
+    border-left: 1px solid rgba(255,255,255,0.15);
+    color: #c8e6fa;
+  }
+  .parts-td-export {
+    text-align: center;
+    padding: 6px 8px;
+    border-left: 1px solid #e8e2d6;
+    border-bottom: 1px solid #f0ece3;
+  }
+
+  /* ── زر طباعة الطالب ── */
+  .btn-print-student {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1.5px solid #1a3c5e;
+    background: transparent;
+    color: #1a3c5e;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .btn-print-student:hover {
+    background: #1a3c5e;
+    color: white;
+  }
+
+  /* ── لوحة حالة Firebase ── */
+  #firebase-status-bar {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  #firebase-status-bar.fb-ready    { background: #e8f5e9; color: #1e7e34; border: 1.5px solid #a5d6a7; }
+  #firebase-status-bar.fb-not-set  { background: #fff8e1; color: #856404; border: 1.5px solid #ffe082; }
+  #firebase-status-bar.fb-error    { background: #fdecea; color: #b71c1c; border: 1.5px solid #ef9a9a; }
+  #firebase-status-bar .fb-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  #firebase-status-bar.fb-ready   .fb-dot { background: #28a745; }
+  #firebase-status-bar.fb-not-set .fb-dot { background: #ffc107; }
+  #firebase-status-bar.fb-error   .fb-dot { background: #dc3545; }
+
+  /* ── مودال إعداد Firebase ── */
+  #firebase-modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+  }
+  #firebase-modal-overlay.open { display: flex; }
+  #firebase-modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 24px;
+    width: min(480px, 95vw);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    font-family: 'Cairo', sans-serif;
+    direction: rtl;
+  }
+  #firebase-modal h2 { font-size: 1.1rem; color: #1a3c5e; margin-bottom: 4px; }
+  #firebase-modal p  { font-size: 0.8rem; color: #666; margin-bottom: 16px; }
+  #firebase-modal label { display: block; font-size: 0.8rem; font-weight: 700; color: #333; margin-bottom: 3px; margin-top: 10px; }
+  #firebase-modal input {
+    width: 100%; padding: 8px 10px; border: 1.5px solid #d9d0c0;
+    border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 0.82rem;
+    direction: ltr; text-align: left;
+  }
+  #firebase-modal input:focus { outline: none; border-color: #1a3c5e; }
+  .fb-modal-btns { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+  .fb-btn-save {
+    padding: 8px 20px; border-radius: 8px; border: none;
+    background: #1a3c5e; color: white; font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  }
+  .fb-btn-close {
+    padding: 8px 16px; border-radius: 8px; border: 1.5px solid #ccc;
+    background: transparent; color: #555; font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem; cursor: pointer;
+  }
+  .fb-instructions {
+    background: #f4f1eb; border-radius: 8px; padding: 10px 12px;
+    font-size: 0.76rem; color: #555; line-height: 1.8; margin-bottom: 8px;
+  }
+  .fb-instructions a { color: #1a3c5e; font-weight: 700; }
+
+  /* ── منطقة الطباعة ── */
+  #student-print-area { display: none; }
+
+  @media print {
+    body > *:not(#student-print-area) { display: none !important; }
+    #student-print-area {
+      display: block !important;
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      padding: 20px;
+      color: #000;
+      font-size: 13px;
+    }
+    #student-print-area h1 { font-size: 18px; margin-bottom: 10px; color: #1a3c5e; }
+    .sp-meta { margin-bottom: 14px; line-height: 2; }
+    .sp-meta span { display: inline-block; margin-left: 20px; }
+    .sp-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .sp-table thead tr { background: #1a3c5e !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sp-table th, .sp-table td { padding: 7px 10px; text-align: center; border: 1px solid #999; }
+    .sp-table tbody tr:nth-child(even) { background: #f4f1eb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sp-summary { margin-top: 14px; display: flex; gap: 14px; flex-wrap: wrap; }
+    .sp-summary div { border: 1px solid #999; padding: 6px 12px; border-radius: 6px; }
+    .sp-footer { margin-top: 20px; font-size: 11px; color: #666; text-align: center; border-top: 1px solid #ccc; padding-top: 8px; }
+  }
+
+/* ══════════════════════════════════════════════
+   Auth — شاشة تسجيل الدخول
+══════════════════════════════════════════════ */
+#auth-screen {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: var(--bg);
+  justify-content: center;
+  align-items: center;
+  font-family: 'Cairo', sans-serif;
+}
+#auth-screen.hidden { display: none; }
+.auth-card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 36px 28px;
+  width: min(400px, 92vw);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  text-align: center;
+}
+.auth-logo { font-size: 2.8rem; margin-bottom: 6px; }
+.auth-title { font-size: 1.3rem; font-weight: 900; color: var(--primary); margin-bottom: 4px; }
+.auth-sub   { font-size: 0.82rem; color: var(--muted); margin-bottom: 24px; }
+.auth-field { margin-bottom: 14px; text-align: right; }
+.auth-field label { display: block; font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+.auth-field input {
+  width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-family: 'Cairo', sans-serif; font-size: 0.92rem;
+  direction: ltr; text-align: left; background: var(--bg);
+  transition: border-color 0.18s;
+}
+.auth-field input:focus { outline: none; border-color: var(--primary); }
+.auth-btn {
+  width: 100%; padding: 12px; border-radius: 10px; border: none;
+  background: var(--primary); color: white; font-family: 'Cairo', sans-serif;
+  font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 6px;
+  transition: opacity 0.18s;
+}
+.auth-btn:hover { opacity: 0.88; }
+.auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-error {
+  background: #fdecea; color: #b71c1c; border-radius: 8px;
+  padding: 8px 12px; font-size: 0.82rem; margin-top: 12px; display: none;
+}
+.auth-error.show { display: block; }
+.auth-no-firebase {
+  background: #fff8e1; color: #856404; border-radius: 8px;
+  padding: 10px 14px; font-size: 0.8rem; margin-top: 14px;
+  line-height: 1.7; display: none;
+}
+.auth-no-firebase.show { display: block; }
+
+/* ── شريط المستخدم الحالي ── */
+#user-bar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.15);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+}
+#user-bar .role-badge {
+  padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;
+}
+.role-admin   { background: #e74c3c; }
+.role-teacher { background: #27ae60; }
+.role-viewer  { background: #7c3aed; }
+
+/* ── مودال إدارة المستخدمين (مشرف فقط) ── */
+#users-modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 10001;
+  justify-content: center; align-items: center;
+}
+#users-modal-overlay.open { display: flex; }
+#users-modal {
+  background: var(--card); border-radius: 16px; padding: 24px 20px;
+  width: min(520px, 95vw); max-height: 85vh; overflow-y: auto;
+  font-family: 'Cairo', sans-serif; direction: rtl;
+}
+#users-modal h2 { font-size: 1.05rem; color: var(--primary); margin-bottom: 16px; }
+.um-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.um-form input, .um-form select {
+  padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 8px;
+  font-family: 'Cairo', sans-serif; font-size: 0.82rem; background: var(--bg);
+}
+.um-form input { direction: ltr; }
+.um-form select { direction: rtl; }
+.um-form input:focus, .um-form select:focus { outline: none; border-color: var(--primary); }
+.um-add-btn {
+  grid-column: 1 / -1; padding: 9px; border-radius: 8px; border: none;
+  background: var(--primary); color: white; font-family: 'Cairo', sans-serif;
+  font-size: 0.88rem; font-weight: 700; cursor: pointer;
+}
+.um-add-btn:hover { opacity: 0.88; }
+.um-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.um-table th { background: var(--primary); color: white; padding: 8px; text-align: center; }
+.um-table td { padding: 8px; border-bottom: 1px solid var(--border); text-align: center; }
+.um-table tr:last-child td { border-bottom: none; }
+.um-del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; }
+.um-close { margin-top: 16px; width: 100%; padding: 8px; border-radius: 8px; border: 1.5px solid var(--border); background: transparent; font-family: 'Cairo', sans-serif; font-size: 0.88rem; cursor: pointer; }
+
+</style>
+</head>
+<body>
+
+<!-- ══ شاشة تسجيل الدخول / إنشاء حساب ══ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">📚</div>
+    <div class="auth-title">نظام متابعة الطلاب</div>
+    <div class="auth-sub" id="auth-sub-text">سجّل دخولك للمتابعة</div>
+
+    <div id="auth-firebase-warn" class="auth-no-firebase" style="display:none">
+      ⚠️ جارٍ الاتصال بـ Firebase... يرجى الانتظار لحظة
+    </div>
+
+    <!-- حقل الاسم — يظهر فقط عند التسجيل -->
+    <div class="auth-field" id="auth-name-field" style="display:none">
+      <label>الاسم الكامل</label>
+      <input id="auth-name" type="text" placeholder="أدخل اسمك"
+        style="direction:rtl;text-align:right"
+        onkeydown="if(event.key==='Enter')doRegister()">
+    </div>
+
+    <div class="auth-field">
+      <label>البريد الإلكتروني</label>
+      <input id="auth-email" type="email" placeholder="example@email.com"
+        onkeydown="if(event.key==='Enter')authMode==='login'?doLogin():doRegister()">
+    </div>
+    <div class="auth-field">
+      <label>كلمة المرور</label>
+      <input id="auth-password" type="password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')authMode==='login'?doLogin():doRegister()">
+    </div>
+
+    <!-- زر الدخول -->
+    <button class="auth-btn" id="auth-login-btn" onclick="doLogin()">تسجيل الدخول</button>
+
+    <!-- زر التسجيل (مخفي افتراضياً) -->
+    <button class="auth-btn" id="auth-register-btn"
+      style="display:none;background:var(--success)"
+      onclick="doRegister()">إنشاء الحساب</button>
+
+    <div class="auth-error" id="auth-error"></div>
+
+    <!-- رابط التبديل بين الدخول والتسجيل -->
+    <div style="margin-top:16px;font-size:0.82rem;color:var(--muted)">
+      <span id="auth-toggle-text">ليس لديك حساب؟</span>
+      <button id="auth-toggle-btn" onclick="toggleAuthMode()"
+        style="background:none;border:none;color:var(--primary);font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;font-size:0.82rem;margin-right:4px">
+        إنشاء حساب جديد
+      </button>
+    </div>
+
+    <!-- تنبيه الانتظار (بعد التسجيل) -->
+    <div id="auth-pending-msg" class="auth-no-firebase" style="display:none;background:#e8f5e9;color:#1e7e34;border:1px solid #a5d6a7">
+      ✅ تم إنشاء حسابك بنجاح!<br>
+      في انتظار تعيين الصلاحية من المشرف.
+    </div>
+  </div>
+</div>
+
+<!-- ══ مودال إدارة المستخدمين ══ -->
+<div id="users-modal-overlay">
+  <div id="users-modal">
+    <h2>👥 إدارة المستخدمين <span style="font-size:0.75rem;font-weight:400;color:var(--muted)">— المستخدمون الجدد بالخلفية الصفراء ينتظرون الصلاحية</span></h2>
+
+    <div style="font-size:0.78rem;color:#856404;background:#fff8e1;padding:8px 12px;border-radius:8px;margin-bottom:12px">
+      ⏳ المستخدمون الجدد ينتظرون تعيين الصلاحية — غيّر صلاحيتهم من القائمة أدناه
+    </div>
+    <table class="um-table">
+      <thead><tr><th>الاسم</th><th>البريد</th><th>الصلاحية</th><th>حذف</th></tr></thead>
+      <tbody id="um-list"></tbody>
+    </table>
+    <button class="um-close" onclick="closeUsersModal()">✕ إغلاق</button>
+  </div>
+</div>
+
+<!-- App Navbar -->
+<nav class="app-navbar no-print">
+  <button class="nav-btn nav-active" id="nav-report" onclick="switchPage('report')">📋 التقرير الأسبوعي</button>
+  <button class="nav-btn" id="nav-parts" onclick="switchPage('parts')">📚 عرض الأجزاء</button>
+  <div style="flex:1"></div>
+  <div id="user-bar" onclick="currentUserRole==='admin'?openUsersModal():doLogout()">
+    <span id="user-bar-name">—</span>
+    <span class="role-badge" id="user-bar-role"></span>
+    <span style="font-size:0.7rem;opacity:0.8" id="user-bar-action"></span>
+  </div>
+</nav>
+
+<!-- Hijri Picker Overlay -->
+<div class="hijri-overlay" id="hijri-overlay" onclick="if(event.target===this)closePicker()">
+  <div class="hijri-picker">
+    <div class="hp-header">
+      <button class="hp-nav" onclick="pickerNav(1)">&#8594;</button>
+      <span id="hp-month-label"></span>
+      <button class="hp-nav" onclick="pickerNav(-1)">&#8592;</button>
+    </div>
+    <div class="hp-grid" id="hp-grid"></div>
+    <button class="hp-close" onclick="closePicker()">✕ إغلاق</button>
+  </div>
+</div>
+
+
+<!-- Monthly Report Modal -->
+<div class="monthly-modal" id="monthly-modal">
+  <div class="monthly-box">
+    <div class="monthly-header">
+      <h2>📅 التقرير الشهري</h2>
+      <button class="monthly-close" onclick="closeMonthlyModal()">✕ إغلاق</button>
+    </div>
+    <div class="monthly-select-section">
+      <label>اختر الأسابيع المراد تضمينها في التقرير:</label>
+      <div class="weeks-checkboxes" id="weeks-checkboxes"></div>
+    </div>
+    <div id="monthly-content"></div>
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:18px">
+      <button class="btn btn-primary" onclick="generateMonthlyReport()">🔄 توليد التقرير</button>
+      <button class="btn btn-accent" onclick="printMonthlyReport()">🖨️ طباعة</button>
+    </div>
+  </div>
+</div>
+
+<!-- Student Profile Modal -->
+<div class="profile-overlay" id="profile-modal" onclick="if(event.target===this)closeProfile()">
+  <div class="profile-box">
+    <div class="profile-hero" id="profile-hero">
+      <button class="profile-close" onclick="closeProfile()">✕</button>
+      <div class="profile-hero-name" id="profile-name"></div>
+      <div class="profile-hero-sub" id="profile-sub"></div>
+      <div class="profile-badge-row" id="profile-badge-row"></div>
+    </div>
+    <div class="profile-body">
+      <div class="profile-grid" id="profile-grid"></div>
+      <div class="profile-section-title">📊 الرسوم البيانية</div>
+      <div class="profile-charts-grid" id="profile-charts-grid">
+        <div class="profile-chart-card">
+          <div class="profile-chart-title">تطور الالتزام الأسبوعي</div>
+          <div class="profile-chart-wrap" id="wrap-commitment"><canvas id="chart-commitment"></canvas></div>
+        </div>
+        <div class="profile-chart-card">
+          <div class="profile-chart-title">تطور الصفحات المنجزة</div>
+          <div class="profile-chart-wrap" id="wrap-pages"><canvas id="chart-pages"></canvas></div>
+        </div>
+        <div class="profile-chart-card wide">
+          <div class="profile-chart-title">متوسط الأداء الشهري</div>
+          <div class="profile-chart-wrap tall" id="wrap-monthly"><canvas id="chart-monthly"></canvas></div>
+        </div>
+      </div>
+      <div class="profile-section-title">🏆 أفضل وأضعف أسبوع</div>
+      <div class="profile-best-worst" id="profile-bw"></div>
+      <div class="profile-section-title">📝 الملاحظات التربوية</div>
+      <textarea class="profile-notes-area" id="profile-notes" placeholder="أضف ملاحظاتك التربوية هنا..." oninput="saveProfileNotes()"></textarea>
+      <div class="profile-section-title">📅 سجل الأسابيع</div>
+      <div class="profile-history" id="profile-history"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div class="edit-modal-overlay" id="edit-student-modal">
+  <div class="edit-modal-box">
+    <div class="edit-modal-title">✏️ تعديل بيانات الطالب</div>
+    <div class="edit-field">
+      <label>اسم الطالب</label>
+      <input type="text" id="edit-name" placeholder="اسم الطالب">
+    </div>
+    <div class="edit-field">
+      <label>من صفحة</label>
+      <input type="number" id="edit-page-from" placeholder="مثال: ١٠٣">
+    </div>
+    <div class="edit-field">
+      <label>إلى صفحة</label>
+      <input type="number" id="edit-page-to" placeholder="مثال: ١٠٤">
+    </div>
+    <div class="edit-modal-actions">
+      <button class="btn btn-primary" onclick="saveEditStudent()">💾 حفظ</button>
+      <button class="btn" style="background:#f0ece3;color:var(--primary);border:1.5px solid var(--border)" onclick="closeEditModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Week Confirm Modal -->
+<div class="modal-overlay" id="new-week-modal">
+  <div class="modal-box">
+    <div class="modal-icon">🔄</div>
+    <div class="modal-title">بدء أسبوع جديد</div>
+    <div class="modal-desc">
+      ستُحذف جميع تقييمات الأسبوع الحالي (الحضور والغياب والتسميع).<br>
+      <strong>أسماء الطلاب وصفحاتهم ستبقى محفوظة.</strong>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-new-week" onclick="confirmNewWeek()">✅ نعم، ابدأ أسبوعاً جديداً</button>
+      <button class="btn" style="background:#f0ece3;color:var(--primary);border:1.5px solid var(--border)" onclick="closeNewWeekModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Page: Report -->
+<div id="page-report">
+
+<div class="page-header">
+  <h1>📋 التقرير الأسبوعي للطلاب</h1>
+  <div class="subtitle">متابعة الحفظ والتسميع اليومي</div>
+</div>
+
+<!-- Meta Info -->
+<div class="meta-section">
+  <div class="meta-field">
+    <label>المعلم</label>
+    <input type="text" id="teacher-name" placeholder="اسم المعلم" oninput="saveReport()">
+  </div>
+  <div class="meta-field">
+    <label>المشرف التعليمي</label>
+    <input type="text" id="supervisor-name" placeholder="اسم المشرف" oninput="saveReport()">
+  </div>
+  <div class="meta-field">
+    <label>الأسبوع من (هجري)</label>
+    <input type="text" id="week-start" placeholder="مثال: ١ محرم ١٤٤٦" readonly style="cursor:pointer" onclick="openHijriPicker('week-start')">
+  </div>
+  <div class="meta-field">
+    <label>الأسبوع إلى (هجري)</label>
+    <input type="text" id="week-end" placeholder="مثال: ٦ محرم ١٤٤٦" readonly style="cursor:pointer" onclick="openHijriPicker('week-end')">
+  </div>
+  <div class="meta-field full-width">
+    <label>رقم الأسبوع</label>
+    <div class="week-number-inline">
+      <span class="wni-icon">📅</span>
+      <input
+        type="text"
+        id="week-number"
+        placeholder="اكتب رقم الأسبوع… مثال: الأسبوع الأول"
+        oninput="saveReport()"
+      >
+      <span class="wni-hash">#</span>
+    </div>
+  </div>
+</div>
+
+<!-- Add Student -->
+<div class="add-student-section no-print">
+  <div class="meta-field">
+    <label>اسم الطالب</label>
+    <input type="text" id="new-student-name" placeholder="أدخل اسم الطالب" onkeydown="if(event.key==='Enter')addStudent()">
+  </div>
+  <div class="meta-field">
+    <label>من صفحة</label>
+    <input type="number" id="page-from" placeholder="١٠٣" style="width:100%">
+  </div>
+  <div class="meta-field">
+    <label>إلى صفحة</label>
+    <input type="number" id="page-to" placeholder="١٠٤" style="width:100%">
+  </div>
+  <button class="btn btn-primary" onclick="addStudent()">➕ إضافة طالب</button>
+</div>
+
+<!-- Students List -->
+<div class="students-section" id="students-container">
+
+  <div class="students-toolbar no-print">
+    <input class="toolbar-search" type="text" id="student-search" placeholder="🔍 بحث باسم الطالب..." oninput="applyToolbar()">
+    <button class="sort-btn" id="sort-alpha" onclick="setSort('alpha')">أ-ي</button>
+    <button class="sort-btn" id="sort-high" onclick="setSort('high')">⬆️ الأعلى</button>
+    <button class="sort-btn" id="sort-low" onclick="setSort('low')">⬇️ الأقل</button>
+  </div>
+  <div class="section-title">الطلاب</div>
+  <div id="students-list">
+    <div class="empty-state">
+      <div class="icon">👥</div>
+      <div>لا يوجد طلاب بعد. أضف طالباً من الأعلى.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Actions -->
+<div class="actions-bar no-print">
+  <button class="btn btn-accent" onclick="printWeeklyReport()">🖨️ طباعة التقرير</button>
+  <button class="btn btn-new-week" onclick="openNewWeekModal()">🔄 بدء أسبوع جديد</button>
+  <button class="btn" style="background:#2d6a4f;color:white" onclick="toggleArchivePanel()">🗂️ الأرشيف</button>
+  <button class="btn btn-monthly" onclick="openMonthlyModal()">📅 تقرير شهري</button>
+  <button class="btn" style="background:#0f4c75;color:white" onclick="exportBackup()">⬇️ تصدير نسخة احتياطية</button>
+  <button class="btn" style="background:white;color:#0f4c75;border:1.5px solid #0f4c75" onclick="document.getElementById('import-file-input').click()">⬆️ استيراد نسخة احتياطية</button>
+  <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importBackup(event)">
+</div>
+
+<!-- Archive Panel -->
+<div class="archive-panel no-print" id="archive-panel" style="display:none">
+  <div class="archive-header" onclick="toggleArchivePanel()">
+    <h3>🗂️ أرشيف التقارير الأسبوعية</h3>
+    <span class="archive-toggle" id="archive-toggle-icon">▼</span>
+  </div>
+  <div class="archive-body" id="archive-body">
+    <div class="archive-list" id="archive-list"></div>
+  </div>
+</div>
+
+</div><!-- end #page-report -->
+
+<!-- Page: Parts View -->
+<div id="page-parts">
+  <div class="page-header">
+    <h1>📚 عرض الأجزاء</h1>
+    <div class="subtitle">متابعة إتمام الأجزاء ودرجات العرض</div>
+  </div>
+  <!-- إضافة طالب من صفحة الأجزاء -->
+  <div class="add-student-section no-print">
+    <div class="meta-field">
+      <label>اسم الطالب</label>
+      <input type="text" id="parts-new-name" placeholder="أدخل اسم الطالب" onkeydown="if(event.key==='Enter')addStudentFromParts()">
+    </div>
+    <div class="meta-field">
+      <label>من صفحة</label>
+      <input type="number" id="parts-page-from" placeholder="١٠٣" style="width:100%">
+    </div>
+    <div class="meta-field">
+      <label>إلى صفحة</label>
+      <input type="number" id="parts-page-to" placeholder="١٠٤" style="width:100%">
+    </div>
+    <button class="btn btn-primary" onclick="addStudentFromParts()">➕ إضافة طالب</button>
+  </div>
+
+  <!-- لوحة الإحصائيات -->
+  <div class="parts-stats-panel" id="parts-stats-panel">
+    <div class="parts-stat-card green">
+      <div class="parts-stat-icon">✅</div>
+      <div class="parts-stat-value" id="stat-total-done">0</div>
+      <div class="parts-stat-label">إجمالي الأجزاء المكتملة</div>
+      <div class="parts-stat-sub" id="stat-total-done-sub">من أصل 0 جزء</div>
+    </div>
+    <div class="parts-stat-card gold">
+      <div class="parts-stat-icon">⭐</div>
+      <div class="parts-stat-value" id="stat-avg-score">—</div>
+      <div class="parts-stat-label">متوسط درجات العرض</div>
+      <div class="parts-stat-sub">من 100</div>
+    </div>
+    <div class="parts-stat-card blue">
+      <div class="parts-stat-icon">🏆</div>
+      <div class="parts-stat-value" id="stat-top-student">—</div>
+      <div class="parts-stat-label">الطالب الأعلى إنجازًا</div>
+      <div class="parts-stat-sub" id="stat-top-student-sub">—</div>
+    </div>
+  </div>
+
+  <div class="parts-table-wrap">
+    <div class="parts-table-scroll">
+      <table class="parts-table" id="parts-table">
+        <thead>
+          <tr id="parts-thead-row">
+            <th class="parts-th-name">اسم الطالب</th>
+            <!-- جزء 1 .. 30 تُولَّد بـ JS -->
+            <!-- أعمدة الإحصائيات تُضاف بـ JS -->
+          </tr>
+        </thead>
+        <tbody id="parts-tbody"></tbody>
+      </table>
+      <div class="parts-empty" id="parts-empty">
+        <div style="font-size:2.5rem;margin-bottom:12px">📖</div>
+        <div>لا يوجد طلاب بعد. أضف طالباً باستخدام الحقول أعلاه.</div>
+      </div>
+    </div>
+  </div>
+</div><!-- end #page-parts -->
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+const DAYS = ['السبت','الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];
+const COLS = ['القديم','التراكمي','التسميع'];
+const HIJRI_MONTHS = ['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الثانية','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+
+// ── Storage keys (separated) ──
+const KEY_STUDENTS = 'wr_students';   // أسماء الطلاب وصفحاتهم
+const KEY_REPORT   = 'wr_report';     // بيانات التقرير (تقييمات + معلومات الأسبوع)
+
+let students = [];
+
+/* ══════════════════════════════
+   Hijri conversion (Kuwaiti algorithm)
+══════════════════════════════ */
+function gregorianToHijri(gY, gM, gD) {
+  const jd = Math.floor((14 - gM) / 12);
+  const y = gY + 4800 - jd;
+  const m = gM + 12 * jd - 3;
+  let jdn = gD + Math.floor((153*m+2)/5) + 365*y + Math.floor(y/4) - Math.floor(y/100) + Math.floor(y/400) - 32045;
+  let l = jdn - 1948440 + 10632;
+  const n = Math.floor((l-1)/10631);
+  l = l - 10631*n + 354;
+  const j = Math.floor((10985-l)/5316)*Math.floor((50*l)/17719) + Math.floor(l/5670)*Math.floor((43*l)/15238);
+  l = l - Math.floor((30-j)/15)*Math.floor((17719*j)/50) - Math.floor(j/16)*Math.floor((15238*j)/43) + 29;
+  const hY = 30*n + j - 30;
+  const hM = Math.floor((24*l)/709);
+  const hD = l - Math.floor((709*hM)/24);
+  return { y: hY, m: hM, d: hD };
+}
+
+function hijriToGregorian(hY, hM, hD) {
+  const jd = Math.floor((11*hY+3)/30) + 354*hY + 30*hM - Math.floor((hM-1)/2) + hD + 1948440 - 385;
+  const l = jd + 68569;
+  const n = Math.floor((4*l)/146097);
+  const ll = l - Math.floor((146097*n+3)/4);
+  const i = Math.floor((4000*(ll+1))/1461001);
+  const lll = ll - Math.floor((1461*i)/4) + 31;
+  const j = Math.floor((80*lll)/2447);
+  const d = lll - Math.floor((2447*j)/80);
+  const l2 = Math.floor(j/11);
+  const m = j + 2 - 12*l2;
+  const yr = 100*(n-49) + i + l2;
+  return new Date(yr, m-1, d);
+}
+
+function hijriDaysInMonth(hY, hM) {
+  const g1 = hijriToGregorian(hY, hM, 1);
+  const nextM = hM === 12 ? 1 : hM + 1;
+  const nextY = hM === 12 ? hY + 1 : hY;
+  const g2 = hijriToGregorian(nextY, nextM, 1);
+  return Math.round((g2 - g1) / 86400000);
+}
+
+function formatHijri(hY, hM, hD) {
+  return `${hD} ${HIJRI_MONTHS[hM-1]} ${hY}`;
+}
+
+function todayHijri() {
+  const t = new Date();
+  return gregorianToHijri(t.getFullYear(), t.getMonth()+1, t.getDate());
+}
+
+/* ══════════════════════════════
+   Hijri Picker
+══════════════════════════════ */
+let pickerTarget = null;
+let pickerH = { y: 1446, m: 1 };
+
+function openHijriPicker(targetId) {
+  pickerTarget = targetId;
+  const h = todayHijri();
+  pickerH = { y: h.y, m: h.m };
+  renderPicker();
+  document.getElementById('hijri-overlay').style.display = 'flex';
+}
+
+function closePicker() {
+  document.getElementById('hijri-overlay').style.display = 'none';
+}
+
+function renderPicker() {
+  const days = hijriDaysInMonth(pickerH.y, pickerH.m);
+  const today = todayHijri();
+  let grid = '';
+  for (let d = 1; d <= days; d++) {
+    const isToday = d === today.d && pickerH.m === today.m && pickerH.y === today.y;
+    grid += `<button class="hp-day ${isToday ? 'hp-today' : ''}" onclick="selectDay(${d})">${d}</button>`;
+  }
+  document.getElementById('hp-month-label').textContent = `${HIJRI_MONTHS[pickerH.m-1]} ${pickerH.y}`;
+  document.getElementById('hp-grid').innerHTML = grid;
+}
+
+function pickerNav(dir) {
+  pickerH.m += dir;
+  if (pickerH.m > 12) { pickerH.m = 1; pickerH.y++; }
+  if (pickerH.m < 1)  { pickerH.m = 12; pickerH.y--; }
+  renderPicker();
+}
+
+function selectDay(d) {
+  const label = formatHijri(pickerH.y, pickerH.m, d);
+  document.getElementById(pickerTarget).value = label;
+  closePicker();
+  saveReport();
+}
+
+/* ══════════════════════════════
+   Toast
+══════════════════════════════ */
+function showToast(msg, color = 'var(--primary)') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* ══════════════════════════════
+   New Week Modal
+══════════════════════════════ */
+function openNewWeekModal() {
+  document.getElementById('new-week-modal').style.display = 'flex';
+}
+
+function closeNewWeekModal() {
+  document.getElementById('new-week-modal').style.display = 'none';
+}
+
+function confirmNewWeek() {
+  closeNewWeekModal();
+
+  // ── أرشفة الأسبوع الحالي قبل المسح ──
+  archiveCurrentWeek();
+
+  // امسح تقييمات كل طالب فقط (أبقِ الاسم والصفحات)
+  students.forEach(s => {
+    s.completedText  = '';
+    s.completedFrom  = '';
+    s.completedTo    = '';
+    s.completedPages = '';
+    s.days = makeFreshDays();
+  });
+
+  // احفظ قائمة الطلاب (بدون تقييمات)
+  saveStudents();
+
+  // امسح بيانات التقرير (تقييمات + تواريخ الأسبوع)
+  const h = todayHijri();
+  const gToday = new Date();
+  const thu = new Date(gToday);
+  thu.setDate(gToday.getDate() + (4 - gToday.getDay() + 7) % 7);
+  const hThu = gregorianToHijri(thu.getFullYear(), thu.getMonth()+1, thu.getDate());
+
+  document.getElementById('week-start').value  = formatHijri(h.y, h.m, h.d);
+  document.getElementById('week-end').value    = formatHijri(hThu.y, hThu.m, hThu.d);
+  document.getElementById('week-number').value = '';
+
+  saveReport();
+  applyToolbar();
+  showToast('✅ تم بدء أسبوع جديد — أسماء الطلاب محفوظة', 'var(--new-week)');
+}
+
+/* ══════════════════════════════
+   Archive
+══════════════════════════════ */
+const KEY_ARCHIVE = 'wr_archive';
+
+function getArchive() {
+  try { return JSON.parse(localStorage.getItem(KEY_ARCHIVE)) || []; }
+  catch(e) { return []; }
+}
+
+function saveArchive(arr) {
+  localStorage.setItem(KEY_ARCHIVE, JSON.stringify(arr));
+}
+
+function archiveCurrentWeek() {
+  const teacher     = document.getElementById('teacher-name').value;
+  const supervisor  = document.getElementById('supervisor-name').value;
+  const weekNumber  = document.getElementById('week-number').value;
+  const weekStart   = document.getElementById('week-start').value;
+  const weekEnd     = document.getElementById('week-end').value;
+
+  if (!weekStart && !weekEnd && students.length === 0) return; // nothing to archive
+
+  const archive = getArchive();
+  const entry = {
+    id: Date.now(),
+    savedAt: new Date().toISOString(),
+    teacher, supervisor, weekNumber, weekStart, weekEnd,
+    students: JSON.parse(JSON.stringify(students)) // deep copy
+  };
+  archive.unshift(entry); // newest first
+  saveArchive(archive);
+  renderArchive();
+}
+
+function deleteArchiveEntry(id) {
+  if (!confirm('هل تريد حذف هذا التقرير من الأرشيف؟')) return;
+  const archive = getArchive().filter(e => e.id !== id);
+  saveArchive(archive);
+  renderArchive();
+  showToast('🗑️ تم حذف التقرير من الأرشيف', '#e74c3c');
+}
+
+function loadArchiveEntry(id) {
+  const entry = getArchive().find(e => e.id === id);
+  if (!entry) return;
+  if (!confirm('سيتم استبدال بيانات الأسبوع الحالي بهذا التقرير. هل تريد المتابعة؟')) return;
+
+  // restore
+  students = entry.students.map(s => ({ ...s, days: s.days || makeFreshDays() }));
+  document.getElementById('teacher-name').value    = entry.teacher    || '';
+  document.getElementById('supervisor-name').value = entry.supervisor || '';
+  document.getElementById('week-number').value     = entry.weekNumber || '';
+  document.getElementById('week-start').value      = entry.weekStart  || '';
+  document.getElementById('week-end').value        = entry.weekEnd    || '';
+
+  saveStudents();
+  saveReport();
+  applyToolbar();
+  showToast('✅ تم تحميل التقرير من الأرشيف', '#2d6a4f');
+}
+
+function renderArchive() {
+  const archive = getArchive();
+  const list = document.getElementById('archive-list');
+  if (!list) return;
+  if (archive.length === 0) {
+    list.innerHTML = '<div class="archive-empty">📭 لا توجد تقارير مؤرشفة بعد.<br>عند بدء أسبوع جديد يُحفظ الأسبوع الحالي تلقائياً.</div>';
+    return;
+  }
+  list.innerHTML = archive.map(e => {
+    const date = new Date(e.savedAt).toLocaleDateString('ar-SA');
+    const stuCount = (e.students || []).length;
+    const weekLabel = e.weekNumber ? `🔢 ${e.weekNumber} — ` : '';
+    return `
+      <div class="archive-item">
+        <div class="archive-item-info">
+          <div class="archive-item-title">${weekLabel}📋 ${e.weekStart || '—'} ← ${e.weekEnd || '—'}</div>
+          <div class="archive-item-sub">${e.teacher ? 'المعلم: ' + e.teacher + ' · ' : ''}${stuCount} طالب · حُفظ: ${date}</div>
+        </div>
+        <div class="archive-item-actions">
+          <button class="btn-archive-load" onclick="loadArchiveEntry(${e.id})">📂 تحميل</button>
+          <button class="btn-archive-del" onclick="deleteArchiveEntry(${e.id})">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleArchivePanel() {
+  const panel = document.getElementById('archive-panel');
+  const body  = document.getElementById('archive-body');
+  const icon  = document.getElementById('archive-toggle-icon');
+  panel.style.display = 'block';
+  const isOpen = body.classList.toggle('open');
+  icon.classList.toggle('open', isOpen);
+  if (isOpen) renderArchive();
+}
+
+/* ══════════════════════════════
+   Monthly Report
+══════════════════════════════ */
+function openMonthlyModal() {
+  const archive = getArchive();
+  if (archive.length === 0) {
+    showToast('⚠️ لا توجد أسابيع مؤرشفة بعد', '#e74c3c');
+    return;
+  }
+  renderWeekCheckboxes(archive);
+  document.getElementById('monthly-content').innerHTML = '<div class="archive-empty">اختر الأسابيع ثم اضغط «توليد التقرير»</div>';
+  document.getElementById('monthly-modal').style.display = 'flex';
+}
+
+function closeMonthlyModal() {
+  document.getElementById('monthly-modal').style.display = 'none';
+}
+
+function renderWeekCheckboxes(archive) {
+  const container = document.getElementById('weeks-checkboxes');
+  container.innerHTML = archive.map((e, i) => {
+    const label = e.weekNumber ? `${e.weekNumber} (${e.weekStart || '—'})` : (e.weekStart || `أسبوع ${i+1}`);
+    return `
+    <label class="week-checkbox-label" id="wclabel-${e.id}">
+      <input type="checkbox" value="${e.id}" checked onchange="updateCheckLabel(${e.id},this.checked)">
+      ${label}
+    </label>`;
+  }).join('');
+}
+
+function updateCheckLabel(id, checked) {
+  const lbl = document.getElementById('wclabel-' + id);
+  if (lbl) lbl.classList.toggle('checked', checked);
+}
+
+function getSelectedWeekIds() {
+  const checks = document.querySelectorAll('#weeks-checkboxes input[type=checkbox]:checked');
+  return Array.from(checks).map(c => parseInt(c.value));
+}
+
+function generateMonthlyReport() {
+  const selectedIds = getSelectedWeekIds();
+  if (selectedIds.length === 0) {
+    showToast('⚠️ اختر أسبوعاً واحداً على الأقل', '#e74c3c');
+    return;
+  }
+  const archive = getArchive();
+  const selectedWeeks = selectedIds.map(id => archive.find(e => e.id === id)).filter(Boolean);
+
+  // Collect all unique student names across selected weeks
+  const allNames = new Set();
+  selectedWeeks.forEach(w => (w.students || []).forEach(s => allNames.add(s.name)));
+
+  if (allNames.size === 0) {
+    document.getElementById('monthly-content').innerHTML = '<div class="archive-empty">لا توجد بيانات طلاب في الأسابيع المختارة.</div>';
+    return;
+  }
+
+  let html = '';
+  allNames.forEach(name => {
+    let totalPass = 0, totalExcuse = 0, totalCells = 0, totalPages = 0;
+    const weeksHtml = selectedWeeks.map(w => {
+      const st = (w.students || []).find(s => s.name === name);
+      if (!st) return `<div class="monthly-week-chip"><div class="wc-title">${w.weekNumber ? w.weekNumber + ' · ' : ''}${w.weekStart || '—'}</div><div style="color:var(--muted);font-size:0.7rem">غائب</div></div>`;
+      let pass = 0, excuse = 0, cells = 0;
+      DAYS.forEach(d => COLS.forEach(c => {
+        const v = cellVal(st.days && st.days[d] ? st.days[d][c] : false);
+        cells++;
+        if (v === true)     pass++;
+        if (v === 'excuse') excuse++;
+      }));
+      totalPass += pass; totalExcuse += excuse; totalCells += cells;
+      if (st.completedPages) totalPages += parseFloat(st.completedPages) || 0;
+      const effective = cells - excuse;
+      const pct = effective > 0 ? Math.round(pass / effective * 100) : (pass > 0 ? 100 : 0);
+      return `<div class="monthly-week-chip">
+        <div class="wc-title">${w.weekNumber ? w.weekNumber + ' · ' : ''}${w.weekStart || '—'}</div>
+        <div class="wc-pass">${pass}/${effective} (${pct}%)${excuse > 0 ? ` 🟢${excuse}` : ''}</div>
+        ${(st.completedFrom && st.completedTo)
+          ? `<div class="wc-pages">📖 ص ${st.completedFrom}–${st.completedTo} (${st.completedPages || (parseInt(st.completedTo)-parseInt(st.completedFrom)+1)} ص)</div>`
+          : st.completedPages ? `<div class="wc-pages">${st.completedPages} صفحة</div>` : ''}
+        ${st.completedText && !(st.completedFrom && st.completedTo)
+          ? `<div class="wc-pages" title="${st.completedText}">📝 ${st.completedText.substring(0,20)}${st.completedText.length>20?'…':''}</div>`
+          : ''}
+      </div>`;
+    }).join('');
+
+    const overallEffective = totalCells - totalExcuse;
+    const overallPct = overallEffective > 0 ? Math.round(totalPass / overallEffective * 100) : (totalPass > 0 ? 100 : 0);
+    const pctColor = overallPct >= 70 ? 'var(--success)' : overallPct >= 40 ? 'var(--accent)' : 'var(--danger)';
+
+    html += `<div class="monthly-student-row">
+      <div class="monthly-student-name">👤 ${name}</div>
+      <div class="monthly-weeks-grid">${weeksHtml}</div>
+      <div class="monthly-total">
+        <span>إجمالي الالتزام: <span style="color:${pctColor}">${overallPct}%</span></span>
+        ${totalExcuse > 0 ? `<span>أعذار: <span style="color:#15803d">🟢 ${totalExcuse}</span></span>` : ''}
+        ${totalPages > 0 ? `<span>إجمالي الصفحات: <span style="color:var(--primary)">${totalPages}</span></span>` : ''}
+        <span>عدد الأسابيع: <span>${selectedWeeks.length}</span></span>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('monthly-content').innerHTML = html;
+  showToast('✅ تم توليد التقرير الشهري', '#2d6a4f');
+}
+
+function printMonthlyReport() {
+  const content = document.getElementById('monthly-content').innerHTML;
+  if (!content || content.includes('اختر الأسابيع')) {
+    showToast('⚠️ يرجى توليد التقرير أولاً', '#e74c3c');
+    return;
+  }
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+    <meta charset="UTF-8">
+    <title>التقرير الشهري</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Cairo', sans-serif; padding: 24px; color: #1a1a2e; }
+      h1 { text-align:center; color: #1a3c5e; margin-bottom: 24px; }
+      .monthly-student-row { border: 1.5px solid #d9d0c0; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+      .monthly-student-name { font-weight: 700; color: #1a3c5e; margin-bottom: 8px; }
+      .monthly-weeks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 8px; }
+      .monthly-week-chip { background: #f4f1eb; border-radius: 8px; padding: 8px 10px; font-size: 0.75rem; border: 1.5px solid #d9d0c0; }
+      .wc-title { font-weight: 700; color: #1a3c5e; margin-bottom: 4px; font-size: 0.7rem; }
+      .wc-pass { color: #27ae60; font-weight: 700; }
+      .wc-pages { color: #6b7280; font-size: 0.7rem; }
+      .monthly-total { display: flex; gap: 12px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid #d9d0c0; font-size: 0.8rem; }
+    
+  /* ── لوحة إحصائيات الأجزاء ── */
+  .parts-stats-panel {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .parts-stat-card {
+    background: var(--card);
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    padding: 16px 14px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(26,60,94,0.07);
+    transition: box-shadow 0.2s;
+  }
+  .parts-stat-card:hover { box-shadow: 0 4px 18px rgba(26,60,94,0.13); }
+  .parts-stat-icon { font-size: 1.6rem; margin-bottom: 6px; }
+  .parts-stat-value {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--primary);
+    margin-bottom: 2px;
+    line-height: 1.1;
+  }
+  .parts-stat-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .parts-stat-card.green .parts-stat-value { color: var(--success); }
+  .parts-stat-card.gold  .parts-stat-value { color: var(--accent); }
+  .parts-stat-card.blue  .parts-stat-value { color: var(--primary); }
+  .parts-stat-sub {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* ── أعمدة الإحصائيات في نهاية كل صف ── */
+  .parts-th-stat {
+    background: #162e48;
+    padding: 10px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 70px;
+    border-left: 1px solid rgba(255,255,255,0.15);
+    color: #c8e6fa;
+  }
+  .parts-td-stat {
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 8px 6px;
+    border-left: 1px solid #e8e2d6;
+    border-bottom: 1px solid #f0ece3;
+    white-space: nowrap;
+  }
+  .parts-td-stat.done-count { color: var(--success); }
+  .parts-td-stat.avg-score  { color: var(--primary); }
+  .parts-td-stat.progress   {}
+  .progress-bar-wrap {
+    width: 52px;
+    height: 6px;
+    background: #e8e2d6;
+    border-radius: 3px;
+    margin: 3px auto 0;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--success);
+    transition: width 0.4s ease;
+  }
+  .progress-pct {
+    font-size: 0.78rem;
+    font-weight: 900;
+  }
+  .pct-high  { color: var(--success); }
+  .pct-mid   { color: var(--accent); }
+  .pct-low   { color: var(--danger); }
+
+  @media (max-width: 480px) {
+    .parts-stats-panel { grid-template-columns: 1fr 1fr; }
+    .parts-stat-card:last-child { grid-column: 1 / -1; }
+  }
+
+
+  /* ── زر تصدير PDF ── */
+  .btn-export-pdf {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1.5px solid #c0392b;
+    background: transparent;
+    color: #c0392b;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .btn-export-pdf:hover {
+    background: #c0392b;
+    color: white;
+  }
+  .parts-th-export {
+    background: #162e48;
+    padding: 10px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 80px;
+    border-left: 1px solid rgba(255,255,255,0.15);
+    color: #c8e6fa;
+  }
+  .parts-td-export {
+    text-align: center;
+    padding: 6px 8px;
+    border-left: 1px solid #e8e2d6;
+    border-bottom: 1px solid #f0ece3;
+  }
+
+</style></head><body>
+    <h1>📅 التقرير الشهري</h1>
+    ${content}
+  </body></html>`);
+  win.document.close();
+  win.print();
+}
+
+
+/* ══════════════════════════════
+   Students
+══════════════════════════════ */
+function makeFreshDays() {
+  const days = {};
+  DAYS.forEach(d => {
+    days[d] = {};
+    COLS.forEach(c => days[d][c] = false);
+  });
+  return days;
+}
+
+/** قراءة قيمة الخلية مع التوافق مع البيانات القديمة (true/false) */
+function cellVal(v) {
+  if (v === 'excuse') return 'excuse';
+  if (v === true  || v === 1) return true;
+  return false;
+}
+
+/** حساب نسبة الإنجاز — خلايا العذر تُستثنى من المقام */
+function calcStats(s) {
+  let pass = 0, excuse = 0, total = 0;
+  DAYS.forEach(d => COLS.forEach(c => {
+    const v = cellVal(s.days && s.days[d] ? s.days[d][c] : false);
+    total++;
+    if (v === true)     pass++;
+    if (v === 'excuse') excuse++;
+  }));
+  const effective = total - excuse;
+  const pct = effective > 0 ? Math.round(pass / effective * 100) : (pass > 0 ? 100 : 0);
+  return { pass, excuse, fail: total - pass - excuse, total, effective, pct };
+}
+
+function addStudent() {
+  const name = document.getElementById('new-student-name').value.trim();
+  const from = document.getElementById('page-from').value;
+  const to   = document.getElementById('page-to').value;
+  if (!name) { showToast('⚠️ الرجاء إدخال اسم الطالب', '#e74c3c'); return; }
+
+  const student = {
+    id: Date.now(),
+    name,
+    pageFrom: from || '',
+    pageTo:   to   || '',
+    pages: from && to ? `${from} الى ${to}` : (from || to || ''),
+    joinDate: new Date().toISOString(),
+    notes: '',
+    completedText:  '',
+    completedFrom:  '',
+    completedTo:    '',
+    completedPages: '',
+    days: makeFreshDays()
+  };
+
+  students.push(student);
+  document.getElementById('new-student-name').value = '';
+  document.getElementById('page-from').value = '';
+  document.getElementById('page-to').value   = '';
+
+  saveStudents();
+  saveReport();
+  applyToolbar();
+  renderPartsTable();
+  showToast(`✅ تمت إضافة "${name}"`);
+}
+
+/* ══════════════════════════════
+   Student Profile
+══════════════════════════════ */
+let profileStudentId = null;
+
+function calcWeekPct(s) {
+  return calcStats(s).pct;
+}
+
+function perfClass(pct) {
+  return pct >= 80 ? 'excellent' : pct >= 50 ? 'average' : 'poor';
+}
+
+function openProfile(id) {
+  const s = students.find(s => s.id === id);
+  if (!s) return;
+  profileStudentId = id;
+
+  // --- Hero ---
+  document.getElementById('profile-name').textContent = s.name;
+  const joinStr = s.joinDate
+    ? new Date(s.joinDate).toLocaleDateString('ar-SA', { year:'numeric', month:'long', day:'numeric' })
+    : '—';
+  document.getElementById('profile-sub').textContent = `تاريخ الانضمام: ${joinStr}`;
+
+  const currentPct = calcWeekPct(s);
+  const cls = perfClass(currentPct);
+  const label = currentPct >= 80 ? 'ممتاز' : currentPct >= 50 ? 'متوسط' : 'يحتاج متابعة';
+  document.getElementById('profile-badge-row').innerHTML = `
+    <span class="profile-hero-chip">📖 ${s.pages || 'غير محدد'}</span>
+    <span class="profile-hero-chip">هذا الأسبوع: ${currentPct}% — ${label}</span>`;
+
+  // --- Archive weeks for this student ---
+  const archive = getArchive();
+  const weekHistory = archive.map(entry => {
+    const st = (entry.students || []).find(x => x.name === s.name);
+    if (!st) return null;
+    let pass = 0, excuse = 0, total = 0;
+    DAYS.forEach(d => COLS.forEach(c => {
+      const v = cellVal(st.days && st.days[d] ? st.days[d][c] : false);
+      total++;
+      if (v === true)     pass++;
+      if (v === 'excuse') excuse++;
+    }));
+    const effective = total - excuse;
+    const pct = effective > 0 ? Math.round(pass / effective * 100) : (pass > 0 ? 100 : 0);
+    return {
+      weekStart: entry.weekStart || '—',
+      weekEnd:   entry.weekEnd   || '—',
+      pct,
+      pages: parseFloat(st.completedPages) || 0,
+      from:  st.completedFrom || '',
+      to:    st.completedTo   || '',
+      text:  st.completedText || ''
+    };
+  }).filter(Boolean);
+
+  // All weeks including current
+  const allWeeks = [
+    {
+      weekStart: document.getElementById('week-start').value || 'الأسبوع الحالي',
+      weekEnd:   document.getElementById('week-end').value   || '',
+      pct: currentPct,
+      pages: parseFloat(s.completedPages) || 0,
+      from:  s.completedFrom || '',
+      to:    s.completedTo   || '',
+      text: s.completedText || '',
+      isCurrent: true
+    },
+    ...weekHistory
+  ];
+
+  // --- Stats ---
+  const avgPct = allWeeks.length
+    ? Math.round(allWeeks.reduce((a, w) => a + w.pct, 0) / allWeeks.length)
+    : currentPct;
+  const totalPages = allWeeks.reduce((a, w) => a + w.pages, 0);
+  const avgCls = perfClass(avgPct);
+
+  document.getElementById('profile-grid').innerHTML = `
+    <div class="profile-stat">
+      <div class="profile-stat-label">متوسط الالتزام</div>
+      <div class="profile-stat-value ${avgCls}">${avgPct}%</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat-label">إجمالي الصفحات المنجزة</div>
+      <div class="profile-stat-value">${totalPages > 0 ? totalPages + ' صفحة' : '—'}</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat-label">الصفحات الحالية</div>
+      <div class="profile-stat-value">${s.pages || '—'}</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat-label">عدد الأسابيع المسجلة</div>
+      <div class="profile-stat-value">${allWeeks.length}</div>
+    </div>`;
+
+  // --- Best / Worst ---
+  let best = null, worst = null;
+  allWeeks.forEach(w => {
+    if (!best  || w.pct > best.pct)  best  = w;
+    if (!worst || w.pct < worst.pct) worst = w;
+  });
+  document.getElementById('profile-bw').innerHTML = `
+    <div class="profile-bw-card best">
+      <div class="profile-bw-label">🏆 أفضل أسبوع</div>
+      <div class="profile-bw-val">${best  ? best.pct  + '%' : '—'}</div>
+      <div style="font-size:0.72rem;color:#1e8449;margin-top:2px">${best  ? best.weekStart  : ''}</div>
+    </div>
+    <div class="profile-bw-card worst">
+      <div class="profile-bw-label">⚠ أضعف أسبوع</div>
+      <div class="profile-bw-val">${worst ? worst.pct + '%' : '—'}</div>
+      <div style="font-size:0.72rem;color:#c0392b;margin-top:2px">${worst ? worst.weekStart : ''}</div>
+    </div>`;
+
+  // --- Notes ---
+  document.getElementById('profile-notes').value = s.notes || '';
+
+  // --- History ---
+  if (allWeeks.length === 0) {
+    document.getElementById('profile-history').innerHTML = '<div class="profile-no-history">لا توجد أسابيع مسجلة بعد.</div>';
+  } else {
+    document.getElementById('profile-history').innerHTML = allWeeks.map(w => {
+      const cls2 = w.isCurrent ? 'current' : perfClass(w.pct);
+      const tag  = w.isCurrent ? '📌 الأسبوع الحالي' : `${w.weekStart}`;
+      const pageInfo = (w.from && w.to)
+        ? `<span class="profile-week-pages">📖 ص ${w.from}–${w.to} (${w.pages || (parseInt(w.to)-parseInt(w.from)+1)} ص)</span>`
+        : w.pages ? `<span class="profile-week-pages">${w.pages} صفحة</span>` : '';
+      return `<div class="profile-week-row">
+        <span class="profile-week-range">${tag}</span>
+        ${pageInfo}
+        <span class="profile-week-pct ${cls2}">${w.pct}%</span>
+      </div>`;
+    }).join('');
+  }
+
+  // --- Charts ---
+  renderProfileCharts(allWeeks);
+
+  document.getElementById('profile-modal').style.display = 'flex';
+}
+
+function closeProfile() {
+  ['chart-commitment','chart-pages','chart-monthly'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { const c = Chart.getChart(el); if (c) c.destroy(); }
+  });
+  document.getElementById('profile-modal').style.display = 'none';
+  profileStudentId = null;
+}
+
+/* ── Chart helpers ── */
+const CHART_COLORS = {
+  blue:       '#1a3c5e',
+  blueLight:  'rgba(26,60,94,0.12)',
+  green:      '#27ae60',
+  greenLight: 'rgba(39,174,96,0.12)',
+  accent:     '#c8a94e',
+  accentLight:'rgba(200,169,78,0.15)',
+  grid:       'rgba(0,0,0,0.06)',
+  muted:      '#6b7280',
+};
+
+function baseLineOpts(color, fill, label) {
+  return {
+    label,
+    borderColor: color,
+    backgroundColor: fill,
+    borderWidth: 2.5,
+    pointBackgroundColor: color,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    tension: 0.35,
+    fill: true,
+  };
+}
+
+function sharedScales(yMax, yLabel) {
+  return {
+    x: {
+      ticks: { font: { family: 'Cairo', size: 10 }, color: CHART_COLORS.muted, maxRotation: 30 },
+      grid:  { color: CHART_COLORS.grid },
+    },
+    y: {
+      min: 0, max: yMax,
+      ticks: { font: { family: 'Cairo', size: 10 }, color: CHART_COLORS.muted,
+               callback: v => v + (yLabel || '') },
+      grid:  { color: CHART_COLORS.grid },
+    }
+  };
+}
+
+function sharedPlugins(legend = false) {
+  return {
+    legend: { display: legend },
+    tooltip: {
+      titleFont: { family: 'Cairo' },
+      bodyFont:  { family: 'Cairo' },
+      rtl: true,
+    }
+  };
+}
+
+function renderProfileCharts(allWeeks) {
+  // Destroy any existing charts first
+  ['chart-commitment','chart-pages','chart-monthly'].forEach(id => {
+    const existing = Chart.getChart(id);
+    if (existing) existing.destroy();
+  });
+
+  // Reset canvases (replace wrapper content to get fresh canvas)
+  document.getElementById('wrap-commitment').innerHTML = '<canvas id="chart-commitment"></canvas>';
+  document.getElementById('wrap-pages').innerHTML      = '<canvas id="chart-pages"></canvas>';
+  document.getElementById('wrap-monthly').innerHTML    = '<canvas id="chart-monthly"></canvas>';
+
+  // Draw after modal is visible
+  setTimeout(() => {
+    const chrono  = [...allWeeks].reverse();
+    const hasData = chrono.length >= 2;
+
+    /* ── 1. Commitment line chart ── */
+    const ctxC = document.getElementById('chart-commitment');
+    if (!hasData) {
+      document.getElementById('wrap-commitment').innerHTML = '<div class="chart-no-data">أسبوعان على الأقل للعرض</div>';
+    } else {
+      const labels = chrono.map((w, i) => w.isCurrent ? 'الحالي' : `أ${i+1}`);
+      new Chart(ctxC, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{ ...baseLineOpts(CHART_COLORS.blue, CHART_COLORS.blueLight, 'الالتزام'),
+            data: chrono.map(w => w.pct) }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: sharedScales(100, '%'),
+          plugins: sharedPlugins(),
+        }
+      });
+    }
+
+    /* ── 2. Pages bar chart ── */
+    const ctxP    = document.getElementById('chart-pages');
+    const pageData = chrono.map(w => w.pages || 0);
+    const hasPages = pageData.some(v => v > 0);
+    if (!hasPages) {
+      document.getElementById('wrap-pages').innerHTML = '<div class="chart-no-data">لا توجد بيانات صفحات</div>';
+    } else {
+      const maxPages = Math.max(...pageData, 1);
+      new Chart(ctxP, {
+        type: 'bar',
+        data: {
+          labels: chrono.map((w, i) => w.isCurrent ? 'الحالي' : `أ${i+1}`),
+          datasets: [{
+            label: 'الصفحات',
+            data: pageData,
+            backgroundColor: chrono.map(w =>
+              w.pct >= 80 ? 'rgba(39,174,96,0.7)' :
+              w.pct >= 50 ? 'rgba(200,169,78,0.7)' :
+                            'rgba(231,76,60,0.65)'),
+            borderRadius: 5,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: sharedScales(Math.ceil(maxPages * 1.2), ' ص'),
+          plugins: sharedPlugins(),
+        }
+      });
+    }
+
+    /* ── 3. Monthly average bar chart ── */
+    const ctxM = document.getElementById('chart-monthly');
+    const monthMap = {};
+    chrono.forEach(w => {
+      const parts    = (w.weekStart || '').split(' ');
+      const monthKey = parts.length >= 2 ? parts[1] : 'غير معروف';
+      if (!monthMap[monthKey]) monthMap[monthKey] = [];
+      monthMap[monthKey].push(w.pct);
+    });
+    const monthLabels = Object.keys(monthMap);
+    const monthAvgs   = monthLabels.map(m => {
+      const arr = monthMap[m];
+      return Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
+    });
+    if (monthLabels.length < 1) {
+      document.getElementById('wrap-monthly').innerHTML = '<div class="chart-no-data">بيانات غير كافية</div>';
+    } else {
+      new Chart(ctxM, {
+        type: 'bar',
+        data: {
+          labels: monthLabels,
+          datasets: [{
+            label: 'متوسط الأداء',
+            data: monthAvgs,
+            backgroundColor: monthAvgs.map(v =>
+              v >= 80 ? 'rgba(39,174,96,0.75)' :
+              v >= 50 ? 'rgba(200,169,78,0.75)' :
+                        'rgba(231,76,60,0.70)'),
+            borderRadius: 6,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: sharedScales(100, '%'),
+          plugins: sharedPlugins(),
+        }
+      });
+    }
+  }, 80);
+}
+
+function saveProfileNotes() {
+  const s = students.find(s => s.id === profileStudentId);
+  if (!s) return;
+  s.notes = document.getElementById('profile-notes').value;
+  saveStudents();
+}
+
+/* ══════════════════════════════
+   Edit Student
+══════════════════════════════ */
+let editingStudentId = null;
+
+function openEditModal(id) {
+  const s = students.find(s => s.id === id);
+  if (!s) return;
+  editingStudentId = id;
+  document.getElementById('edit-name').value      = s.name      || '';
+  document.getElementById('edit-page-from').value = s.pageFrom  || '';
+  document.getElementById('edit-page-to').value   = s.pageTo    || '';
+  document.getElementById('edit-student-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('edit-name').focus(), 50);
+}
+
+function closeEditModal() {
+  document.getElementById('edit-student-modal').style.display = 'none';
+  editingStudentId = null;
+}
+
+function saveEditStudent() {
+  const s = students.find(s => s.id === editingStudentId);
+  if (!s) return;
+  const name = document.getElementById('edit-name').value.trim();
+  if (!name) { showToast('⚠️ الرجاء إدخال اسم الطالب', '#e74c3c'); return; }
+  const from = document.getElementById('edit-page-from').value;
+  const to   = document.getElementById('edit-page-to').value;
+
+  s.name     = name;
+  s.pageFrom = from;
+  s.pageTo   = to;
+  s.pages    = from && to ? `${from} الى ${to}` : (from || to || '');
+
+  saveStudents();
+  saveReport();
+  applyToolbar();
+  closeEditModal();
+  showToast(`✅ تم تحديث بيانات "${name}"`, 'var(--accent)');
+}
+
+async function removeStudent(id) {
+  const s = students.find(s => s.id === id);
+  if (!confirm(`هل تريد حذف الطالب "${s ? s.name : ''}"؟`)) return;
+  students = students.filter(s => s.id !== id);
+
+  // حذف بيانات الأجزاء محلياً
+  const partsData = getPartsData();
+  delete partsData[id];
+  savePartsData(partsData);
+
+  // حذف من Firestore إن متصل (students + student_parts_progress)
+  if (window._firebaseReady && window._db) {
+    try {
+      await window._db.collection('students').doc(String(id)).delete();
+      await window._db.collection('student_parts_progress').doc(String(id)).delete();
+    } catch(e) {
+      console.warn('Firestore removeStudent error:', e.message);
+    }
+  }
+
+  saveStudents();
+  saveReport();
+  applyToolbar();
+  renderPartsTable();
+  showToast('🗑️ تم حذف الطالب', '#e74c3c');
+}
+
+function toggle(studentId, day, col) {
+  const s = students.find(s => s.id === studentId);
+  if (!s) return;
+  const cur = cellVal(s.days[day][col]);
+  // دورة ثلاثية: ❌ → ✅ → 🟢 → ❌
+  if (cur === false)    s.days[day][col] = true;
+  else if (cur === true) s.days[day][col] = 'excuse';
+  else                   s.days[day][col] = false;
+
+  const btn = document.querySelector(`[data-sid="${studentId}"][data-day="${day}"][data-col="${col}"]`);
+  if (btn) {
+    const val = s.days[day][col];
+    if (val === true)      { btn.className = 'check-btn pass';   btn.textContent = '✓'; }
+    else if (val === 'excuse') { btn.className = 'check-btn excuse'; btn.textContent = '🟢'; }
+    else                   { btn.className = 'check-btn fail';   btn.textContent = '✗'; }
+  }
+  updateChips(studentId);
+  saveReport();
+}
+
+function updateChips(studentId) {
+  const s = students.find(s => s.id === studentId);
+  if (!s) return;
+  const { pass, excuse, fail, pct } = calcStats(s);
+  const card = document.querySelector(`[data-card="${studentId}"]`);
+  if (card) {
+    card.querySelector('.chip-pass').textContent   = `✓ ${pass}`;
+    card.querySelector('.chip-fail').textContent   = `✗ ${fail}`;
+    const excuseChip = card.querySelector('.chip-excuse');
+    if (excuseChip) excuseChip.textContent = `🟢 ${excuse}`;
+    const perfCls   = pct >= 80 ? 'excellent' : pct >= 50 ? 'average' : 'poor';
+    const perfLabel = pct >= 80 ? 'ممتاز' : pct >= 50 ? 'متوسط' : 'يحتاج متابعة';
+    const perfIcon  = pct >= 80 ? '✦' : pct >= 50 ? '◆' : '⚠';
+    const badge = card.querySelector(`[data-perf="${studentId}"]`);
+    if (badge) {
+      badge.className = `perf-badge ${perfCls}`;
+      badge.textContent = `${perfIcon} ${pct}% — ${perfLabel}`;
+    }
+  }
+}
+
+function updateCompletion(id, field, value) {
+  const s = students.find(s => s.id === id);
+  if (s) s[field] = value;
+  saveReport();
+}
+
+/** يُحدّث حقل from أو to ثم يحسب عدد الصفحات تلقائياً */
+function updateCompletionRange(id, field, value) {
+  const s = students.find(s => s.id === id);
+  if (!s) return;
+  s[field] = value;
+
+  const from = parseInt(s.completedFrom) || 0;
+  const to   = parseInt(s.completedTo)   || 0;
+
+  if (from > 0 && to >= from) {
+    const count = to - from + 1;
+    s.completedPages = String(count);
+    s.completedText  = `من ${from} إلى ${to}`;
+    // تحديث حقل العدد في الواجهة مباشرة
+    const countEl = document.getElementById(`pages-count-${id}`);
+    if (countEl) countEl.value = count;
+  } else if (from > 0 && to > 0 && to < from) {
+    // قيمة خاطئة — أفرغ العدد
+    s.completedPages = '';
+    s.completedText  = '';
+    const countEl = document.getElementById(`pages-count-${id}`);
+    if (countEl) countEl.value = '';
+  } else {
+    // أحد الحقلين فارغ
+    const f = from || (parseInt(s.completedTo) || 0);
+    const t = parseInt(s.completedTo) || 0;
+    s.completedText = f && t ? `من ${f} إلى ${t}` : (f ? `من ${f}` : (t ? `إلى ${t}` : ''));
+  }
+
+  saveReport();
+}
+
+/* ══════════════════════════════
+   Toolbar — Sort & Search
+══════════════════════════════ */
+let currentSort = null; // null | 'alpha' | 'high' | 'low'
+
+function calcPassRate(s) {
+  const { pass, effective } = calcStats(s);
+  return effective > 0 ? pass / effective : 0;
+}
+
+function setSort(mode) {
+  currentSort = currentSort === mode ? null : mode;
+  ['alpha','high','low'].forEach(m => {
+    document.getElementById('sort-' + m).classList.toggle('active', currentSort === m);
+  });
+  applyToolbar();
+}
+
+function applyToolbar() {
+  const query = (document.getElementById('student-search')?.value || '').trim().toLowerCase();
+  let list = [...students];
+
+  // filter
+  if (query) list = list.filter(s => s.name.toLowerCase().includes(query));
+
+  // sort
+  if (currentSort === 'alpha') {
+    list.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  } else if (currentSort === 'high') {
+    list.sort((a, b) => calcPassRate(b) - calcPassRate(a));
+  } else if (currentSort === 'low') {
+    list.sort((a, b) => calcPassRate(a) - calcPassRate(b));
+  }
+
+  renderStudents(list);
+}
+
+function renderStudents(list) {
+  const container = document.getElementById('students-list');
+  const displayList = list !== undefined ? list : students;
+
+  if (students.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">👥</div><div>لا يوجد طلاب بعد. أضف طالباً من الأعلى.</div></div>`;
+    return;
+  }
+  if (displayList.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><div>لا توجد نتائج مطابقة.</div></div>`;
+    return;
+  }
+
+  container.innerHTML = displayList.map(s => {
+    const rows = DAYS.map(day => {
+      const cells = COLS.map(col => {
+        const v = cellVal(s.days[day][col]);
+        const btnClass = v === true ? 'pass' : v === 'excuse' ? 'excuse' : 'fail';
+        const btnText  = v === true ? '✓'   : v === 'excuse' ? '🟢'    : '✗';
+        return `<td><div class="check-group">
+          <button class="check-btn ${btnClass}"
+            data-sid="${s.id}" data-day="${day}" data-col="${col}"
+            onclick="toggle(${s.id},'${day}','${col}')">
+            ${btnText}
+          </button>
+        </div></td>`;
+      }).join('');
+      return `<tr><td>${day}</td>${cells}</tr>`;
+    }).join('');
+
+    const { pass, excuse, fail, pct } = calcStats(s);
+    const perfClass = pct >= 80 ? 'excellent' : pct >= 50 ? 'average' : 'poor';
+    const perfLabel = pct >= 80 ? 'ممتاز' : pct >= 50 ? 'متوسط' : 'يحتاج متابعة';
+    const perfIcon  = pct >= 80 ? '✦' : pct >= 50 ? '◆' : '⚠';
+
+    return `
+      <div class="student-card" data-card="${s.id}">
+        <div class="student-header">
+          <div>
+            <div class="student-name" onclick="openProfile(${s.id})" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px">${s.name}</div>
+            ${s.pages ? `<div class="student-pages">الصفحات: ${s.pages}</div>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+            <span class="summary-chip chip-pass">✓ ${pass}</span>
+            <span class="summary-chip chip-fail">✗ ${fail}</span>
+            ${excuse > 0 ? `<span class="summary-chip chip-excuse">🟢 ${excuse}</span>` : '<span class="summary-chip chip-excuse" style="display:none">🟢 0</span>'}
+            <span class="perf-badge ${perfClass}" data-perf="${s.id}">${perfIcon} ${pct}% — ${perfLabel}</span>
+            <button class="btn btn-edit no-print" onclick="openEditModal(${s.id})">✏️ تعديل</button>
+            <button class="btn btn-danger no-print" onclick="removeStudent(${s.id})">حذف</button>
+          </div>
+        </div>
+        <table class="days-table">
+          <thead>
+            <tr>
+              <th>اليوم</th>
+              ${COLS.map(c => `<th>${c}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="student-footer">
+          <div class="footer-label">📝 ما أُنجز من التسميع:</div>
+          <div class="footer-field" style="flex:1;min-width:220px">
+            <label>نطاق الصفحات:</label>
+            <div class="footer-range-group">
+              <span class="footer-range-sep">من</span>
+              <input class="footer-pages-num" type="number" min="1" placeholder="١"
+                value="${s.completedFrom || ''}"
+                oninput="updateCompletionRange(${s.id},'completedFrom',this.value)">
+              <span class="footer-range-sep">إلى</span>
+              <input class="footer-pages-num" type="number" min="1" placeholder="١"
+                value="${s.completedTo || ''}"
+                oninput="updateCompletionRange(${s.id},'completedTo',this.value)">
+            </div>
+          </div>
+          <div class="footer-field" style="flex:0 0 auto">
+            <label>عدد الصفحات:</label>
+            <input class="footer-pages-num footer-pages-auto" type="number" min="0" placeholder="—"
+              id="pages-count-${s.id}"
+              value="${s.completedPages || ''}"
+              oninput="updateCompletion(${s.id},'completedPages',this.value)">
+            <span style="font-size:0.8rem;color:var(--muted);font-weight:600">صفحة</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════
+   Page Navigation
+══════════════════════════════ */
+function switchPage(page) {
+  document.getElementById('page-report').style.display = page === 'report' ? 'block' : 'none';
+  document.getElementById('page-parts').style.display  = page === 'parts'  ? 'block' : 'none';
+  document.getElementById('nav-report').classList.toggle('nav-active', page === 'report');
+  document.getElementById('nav-parts').classList.toggle('nav-active',  page === 'parts');
+  if (page === 'parts') renderPartsTable();
+}
+
+/* ══════════════════════════════
+   Parts Table
+══════════════════════════════ */
+const KEY_PARTS = 'student_parts_progress'; // { studentId: { j1: { done, score }, ... } }
+const JUZAAT = 30;
+
+// ── قراءة بيانات الأجزاء من localStorage (متزامن وسريع) ──
+function getPartsData() {
+  try { return JSON.parse(localStorage.getItem(KEY_PARTS)) || {}; }
+  catch(e) { return {}; }
+}
+
+// ── حفظ كامل البيانات محلياً + Firestore (كل طالب document منفصل) ──
+async function savePartsData(data) {
+  localStorage.setItem(KEY_PARTS, JSON.stringify(data));
+
+  if (!window._firebaseReady || !window._db) return;
+  try {
+    const colRef = window._db.collection('student_parts_progress');
+    for (const sid of Object.keys(data)) {
+      await colRef.doc(String(sid)).set({ sid, parts: data[sid], updatedAt: new Date().toISOString() });
+    }
+  } catch(e) {
+    console.warn('Firestore savePartsData error:', e.message);
+  }
+}
+
+// ── تحديث جزء واحد لطالب واحد فقط (أسرع من رفع الكل) ──
+async function saveStudentPartsToFirestore(sid, studentData) {
+  if (!window._firebaseReady || !window._db) return;
+  try {
+    await 
+      window._db.collection('student_parts_progress').doc(String(sid)).set({ sid, parts: studentData, updatedAt: new Date().toISOString() });
+  } catch(e) {
+    console.warn('Firestore saveStudentPartsToFirestore error:', e.message);
+  }
+}
+
+// ── تحميل بيانات الأجزاء من Firestore عند فتح البرنامج ──
+async function loadPartsFromFirestore() {
+  if (!window._firebaseReady || !window._db) return;
+  try {
+    const snapshot = await window._db.collection('student_parts_progress').get();
+    if ((snapshot.empty || snapshot.docs.length === 0)) return;
+    const merged = {};
+    snapshot.docs.forEach(d => {
+      const rec = d.data();
+      if (rec.sid && rec.parts) merged[rec.sid] = rec.parts;
+    });
+    // دمج مع ما هو محلي (Firestore له الأولوية)
+    const local = getPartsData();
+    const final = { ...local, ...merged };
+    localStorage.setItem(KEY_PARTS, JSON.stringify(final));
+  } catch(e) {
+    console.warn('Firestore loadPartsFromFirestore error:', e.message);
+  }
+}
+
+function updatePartCell(sid, juz, field, value) {
+  const data = getPartsData();
+  if (!data[sid]) data[sid] = {};
+  const key = 'j' + juz;
+  if (!data[sid][key]) data[sid][key] = { done: false, score: '' };
+  data[sid][key][field] = value;
+
+  // حفظ محلي فوري
+  localStorage.setItem(KEY_PARTS, JSON.stringify(data));
+  // رفع هذا الطالب فقط إلى Firestore (بدون await — لا يعطل الواجهة)
+  saveStudentPartsToFirestore(sid, data[sid]);
+
+  if (field === 'score') {
+    const input = document.getElementById(`pscore-${sid}-${juz}`);
+    if (input) applyScoreColor(input, value);
+  }
+  if (field === 'done') {
+    const lbl = document.getElementById(`pchklbl-${sid}-${juz}`);
+    if (lbl) lbl.classList.toggle('done', value);
+    const td = document.getElementById(`ptd-${sid}-${juz}`);
+    if (td) td.classList.toggle('part-done', value);
+  }
+  updateRowStats(sid);
+  updatePartsStatsPanel();
+}
+
+function updateRowStats(sid) {
+  const data = getPartsData();
+  const sData = data[sid] || {};
+  const st = calcStudentPartStats(sData);
+  const avgStr = st.avg !== null ? st.avg.toFixed(1) : '—';
+  const pctClass = st.pct >= 70 ? 'pct-high' : st.pct >= 40 ? 'pct-mid' : 'pct-low';
+  const barColor = st.pct >= 70 ? 'var(--success)' : st.pct >= 40 ? 'var(--accent)' : 'var(--danger)';
+
+  // البحث عن خلايا الإحصائيات في الصف
+  // الصف يحتوي على td للاسم + 30 جزء + 3 إحصائيات
+  const firstTd = document.getElementById(`ptd-${sid}-1`);
+  if (!firstTd) return;
+  const row = firstTd.closest('tr');
+  if (!row) return;
+  const tds = row.querySelectorAll('td');
+  // آخر 5 خلايا: إحصائيات (3) + تصدير PDF + طباعة
+  const total = tds.length;
+  if (total < 5) return;
+  tds[total-5].innerHTML = `${st.done} / ${JUZAAT}`;
+  tds[total-4].innerHTML = avgStr;
+  tds[total-3].innerHTML = `<div class="progress-pct ${pctClass}">${st.pct}%</div><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${st.pct}%;background:${barColor}"></div></div>`;
+}
+
+function applyScoreColor(input, val) {
+  const n = parseFloat(val);
+  input.classList.remove('score-high', 'score-mid', 'score-low');
+  if (val === '' || isNaN(n)) return;
+  if (n >= 80) input.classList.add('score-high');
+  else if (n >= 50) input.classList.add('score-mid');
+  else input.classList.add('score-low');
+}
+
+function calcStudentPartStats(sData) {
+  let done = 0, scoreSum = 0, scoreCount = 0;
+  for (let j = 1; j <= JUZAAT; j++) {
+    const jData = sData['j' + j] || {};
+    if (jData.done) done++;
+    const sc = parseFloat(jData.score);
+    if (!isNaN(sc) && jData.score !== '') { scoreSum += sc; scoreCount++; }
+  }
+  const avg = scoreCount > 0 ? (scoreSum / scoreCount) : null;
+  const pct = Math.round((done / JUZAAT) * 100);
+  return { done, avg, pct, scoreCount };
+}
+
+function updatePartsStatsPanel() {
+  const data = getPartsData();
+  if (students.length === 0) {
+    document.getElementById('stat-total-done').textContent = '0';
+    document.getElementById('stat-total-done-sub').textContent = 'من أصل 0 جزء';
+    document.getElementById('stat-avg-score').textContent = '—';
+    document.getElementById('stat-top-student').textContent = '—';
+    document.getElementById('stat-top-student-sub').textContent = '—';
+    return;
+  }
+  let totalDone = 0, globalScoreSum = 0, globalScoreCount = 0;
+  let topName = '—', topDone = -1, topPct = 0;
+  students.forEach(s => {
+    const st = calcStudentPartStats(data[s.id] || {});
+    totalDone += st.done;
+    if (st.avg !== null) { globalScoreSum += st.avg * st.scoreCount; globalScoreCount += st.scoreCount; }
+    if (st.done > topDone || (st.done === topDone && st.pct > topPct)) {
+      topDone = st.done; topName = s.name; topPct = st.pct;
+    }
+  });
+  const totalPossible = students.length * JUZAAT;
+  const globalAvg = globalScoreCount > 0 ? (globalScoreSum / globalScoreCount).toFixed(1) : '—';
+  document.getElementById('stat-total-done').textContent = totalDone;
+  document.getElementById('stat-total-done-sub').textContent = `من أصل ${totalPossible} جزء`;
+  document.getElementById('stat-avg-score').textContent = globalAvg !== '—' ? globalAvg : '—';
+  // اختصار اسم الطالب إذا كان طويلاً
+  const shortName = topName.length > 12 ? topName.substring(0,12) + '…' : topName;
+  document.getElementById('stat-top-student').textContent = shortName;
+  document.getElementById('stat-top-student-sub').textContent = topDone >= 0 ? `${topDone} جزء — ${topPct}%` : '—';
+}
+
+function renderPartsTable() {
+  const data = getPartsData();
+
+  // بناء رأس الجدول (مرة واحدة فقط)
+  const headRow = document.getElementById('parts-thead-row');
+  if (headRow.children.length === 1) {
+    for (let j = 1; j <= JUZAAT; j++) {
+      const th = document.createElement('th');
+      th.textContent = 'الجزء ' + j;
+      headRow.appendChild(th);
+    }
+    // أعمدة الإحصائيات
+    ['الأجزاء المكتملة','متوسط الدرجات','نسبة الإنجاز','تصدير PDF','طباعة'].forEach(label => {
+      const th = document.createElement('th');
+      th.className = (label === 'تصدير PDF' || label === 'طباعة') ? 'parts-th-export' : 'parts-th-stat';
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+  }
+
+  const tbody = document.getElementById('parts-tbody');
+  const empty = document.getElementById('parts-empty');
+
+  if (students.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    updatePartsStatsPanel();
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = students.map(s => {
+    const sData = data[s.id] || {};
+    const st = calcStudentPartStats(sData);
+    const avgStr = st.avg !== null ? st.avg.toFixed(1) : '—';
+    const pctClass = st.pct >= 70 ? 'pct-high' : st.pct >= 40 ? 'pct-mid' : 'pct-low';
+
+    let cells = `<td class="parts-td-name">${s.name}</td>`;
+    for (let j = 1; j <= JUZAAT; j++) {
+      const key = 'j' + j;
+      const jData = sData[key] || { done: false, score: '' };
+      const doneChecked = jData.done ? 'checked' : '';
+      const scoreVal = jData.score !== undefined ? jData.score : '';
+      const doneClass = jData.done ? 'done' : '';
+      const scoreClass = scoreVal !== '' ? (parseFloat(scoreVal) >= 80 ? 'score-high' : parseFloat(scoreVal) >= 50 ? 'score-mid' : 'score-low') : '';
+      const tdDoneClass = jData.done ? 'part-done' : '';
+      cells += `<td id="ptd-${s.id}-${j}" class="${tdDoneClass}">
+        <div class="parts-cell">
+          <label class="parts-check-label ${doneClass}" id="pchklbl-${s.id}-${j}">
+            <input type="checkbox" ${doneChecked}
+              onchange="updatePartCell(${s.id},${j},'done',this.checked)">
+            ✅ تم الإتمام
+          </label>
+          <input class="parts-score-input ${scoreClass}" id="pscore-${s.id}-${j}"
+            type="number" min="0" max="100" placeholder="—"
+            value="${scoreVal}"
+            oninput="updatePartCell(${s.id},${j},'score',this.value);applyScoreColor(this,this.value)">
+        </div>
+      </td>`;
+    }
+
+    // أعمدة الإحصائيات في نهاية الصف
+    cells += `
+      <td class="parts-td-stat done-count">${st.done} / ${JUZAAT}</td>
+      <td class="parts-td-stat avg-score">${avgStr}</td>
+      <td class="parts-td-stat progress">
+        <div class="progress-pct ${pctClass}">${st.pct}%</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" style="width:${st.pct}%;background:${st.pct>=70?'var(--success)':st.pct>=40?'var(--accent)':'var(--danger)'}"></div>
+        </div>
+      </td>
+      <td class="parts-td-export">
+        <button class="btn-export-pdf" onclick="exportStudentPDF(${s.id})">📄 تصدير PDF</button>
+      </td>
+      <td class="parts-td-export">
+        <button class="btn-print-student" onclick="printStudentReport(${s.id})">🖨️ طباعة</button>
+      </td>`;
+
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  updatePartsStatsPanel();
+}
+
+
+
+/** يحفظ أسماء الطلاب وصفحاتهم فقط */
+// ── حفظ الطلاب: Firestore إن متصل، وإلا localStorage ──
+async function saveStudents() {
+  const data = students.map(({ id, name, pageFrom, pageTo, pages, joinDate, notes }) =>
+    ({ id, name, pageFrom, pageTo, pages, joinDate: joinDate || new Date().toISOString(), notes: notes || '' })
+  );
+  localStorage.setItem(KEY_STUDENTS, JSON.stringify(data));
+
+  if (!window._firebaseReady || !window._db) return;
+  try {
+    const colRef = window._db.collection('students');
+    const snapshot = await colRef.get();
+    for (const d of snapshot.docs) await d.ref.delete();
+    for (const s of data) {
+      await colRef.doc(String(s.id)).set(s);
+    }
+  } catch(e) {
+    console.warn('Firestore saveStudents error:', e.message);
+  }
+}
+
+/** يحفظ بيانات التقرير: معلومات الأسبوع + تقييمات كل طالب */
+// ── حفظ التقرير: Firestore إن متصل، وإلا localStorage ──
+async function saveReport() {
+  const reportData = {
+    teacher:     document.getElementById('teacher-name').value,
+    supervisor:  document.getElementById('supervisor-name').value,
+    weekNumber:  document.getElementById('week-number').value,
+    weekStart:   document.getElementById('week-start').value,
+    weekEnd:     document.getElementById('week-end').value,
+    updatedAt:   new Date().toISOString(),
+    ratings: students.map(({ id, completedText, completedFrom, completedTo, completedPages, days }) =>
+      ({ id, completedText, completedFrom, completedTo, completedPages, days })
+    )
+  };
+
+  // دائماً احفظ محلياً كنسخة احتياطية
+  localStorage.setItem(KEY_REPORT, JSON.stringify(reportData));
+
+  if (!window._firebaseReady || !window._db) return;
+
+  try {
+    // نستخدم document ثابت باسم "current" داخل weekly_reports
+    await window._db.collection('weekly_reports').doc('current').set(reportData);
+  } catch(e) {
+    console.warn('Firestore saveReport error:', e.message);
+  }
+}
+
+/** يحمّل بيانات الطلاب: Firestore إن متصل، وإلا localStorage */
+async function loadAll() {
+  // ── تحميل بيانات التقرير ──
+  let report = null;
+
+  if (window._firebaseReady && window._db) {
+    try {
+      const snapP = window._db.collection('weekly_reports').doc('current').get();
+      const snap  = await Promise.race([snapP, new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),6000))]);
+      if (snap.exists) {
+        report = snap.data();
+        localStorage.setItem(KEY_REPORT, JSON.stringify(report));
+      } else {
+        const raw = localStorage.getItem(KEY_REPORT);
+        report = raw ? JSON.parse(raw) : null;
+      }
+    } catch(e) {
+      console.warn('Firestore loadAll (report) — سأستخدم localStorage:', e.message);
+      const raw = localStorage.getItem(KEY_REPORT);
+      report = raw ? JSON.parse(raw) : null;
+    }
+  } else {
+    const raw = localStorage.getItem(KEY_REPORT);
+    report = raw ? JSON.parse(raw) : null;
+  }
+
+  // ── تحميل قائمة الطلاب ──
+  let studentList = [];
+
+  if (window._firebaseReady && window._db) {
+    try {
+      const snapP    = window._db.collection('students').get();
+      const snapshot = await Promise.race([snapP, new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),6000))]);
+      studentList = snapshot.docs.map(d => d.data());
+      localStorage.setItem(KEY_STUDENTS, JSON.stringify(studentList));
+    } catch(e) {
+      console.warn('Firestore loadAll (students) — سأستخدم localStorage:', e.message);
+      const raw = localStorage.getItem(KEY_STUDENTS);
+      studentList = raw ? JSON.parse(raw) : [];
+    }
+  } else {
+    const raw = localStorage.getItem(KEY_STUDENTS);
+    studentList = raw ? JSON.parse(raw) : [];
+  }
+
+  // ── دمج بيانات الطلاب مع تقييمات الأسبوع ──
+  students = studentList.map(st => {
+    const rating = report && report.ratings
+      ? report.ratings.find(r => r.id === st.id)
+      : null;
+    let days = makeFreshDays();
+    if (rating && rating.days) {
+      DAYS.forEach(d => {
+        if (rating.days[d]) {
+          COLS.forEach(c => {
+            const v = rating.days[d][c];
+            days[d][c] = (v === 'excuse') ? 'excuse' : (v === true || v === 1) ? true : false;
+          });
+        }
+      });
+    }
+    return {
+      ...st,
+      joinDate:       st.joinDate       || new Date().toISOString(),
+      notes:          st.notes          || '',
+      completedText:  rating ? (rating.completedText  || '') : '',
+      completedFrom:  rating ? (rating.completedFrom  || '') : '',
+      completedTo:    rating ? (rating.completedTo    || '') : '',
+      completedPages: rating ? (rating.completedPages || '') : '',
+      days
+    };
+  });
+
+  // ── تحميل بيانات الأجزاء من Firestore ──
+  await loadPartsFromFirestore();
+
+  // ── تحميل معلومات الأسبوع في واجهة المستخدم ──
+  if (report) {
+    if (report.teacher)     document.getElementById('teacher-name').value    = report.teacher;
+    if (report.supervisor)  document.getElementById('supervisor-name').value = report.supervisor;
+    if (report.weekNumber)  document.getElementById('week-number').value     = report.weekNumber;
+    if (report.weekStart)   document.getElementById('week-start').value      = report.weekStart;
+    if (report.weekEnd)     document.getElementById('week-end').value        = report.weekEnd;
+  }
+}
+
+/* ══════════════════════════════
+   Export / Import Backup
+══════════════════════════════ */
+function exportBackup() {
+  const backup = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    students:  JSON.parse(localStorage.getItem(KEY_STUDENTS) || '[]'),
+    report:    JSON.parse(localStorage.getItem(KEY_REPORT)   || 'null'),
+    archive:   JSON.parse(localStorage.getItem(KEY_ARCHIVE)  || '[]'),
+  };
+
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toLocaleDateString('ar-SA').replace(/\//g, '-');
+  a.href     = url;
+  a.download = `نسخة-احتياطية-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ تم تصدير النسخة الاحتياطية', '#0f4c75');
+}
+
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backup = JSON.parse(e.target.result);
+
+      // Validate basic structure
+      if (!backup.version || !Array.isArray(backup.students)) {
+        showToast('❌ الملف غير صالح أو تالف', '#e74c3c');
+        return;
+      }
+
+      if (!confirm(`سيتم استبدال جميع البيانات الحالية بالنسخة الاحتياطية.\n\nتاريخ النسخة: ${new Date(backup.exportedAt).toLocaleString('ar-SA')}\n\nهل تريد المتابعة؟`)) {
+        event.target.value = '';
+        return;
+      }
+
+      // Restore all keys
+      localStorage.setItem(KEY_STUDENTS, JSON.stringify(backup.students || []));
+      localStorage.setItem(KEY_REPORT,   JSON.stringify(backup.report   || null));
+      localStorage.setItem(KEY_ARCHIVE,  JSON.stringify(backup.archive  || []));
+
+      // Reload app state
+      loadAll();
+      applyToolbar();
+      renderPartsTable();
+      renderArchive();
+
+      // Show archive panel if entries exist
+      if ((backup.archive || []).length > 0) {
+        document.getElementById('archive-panel').style.display = 'block';
+      }
+
+      showToast('✅ تم استيراد النسخة الاحتياطية بنجاح', '#0f4c75');
+    } catch(err) {
+      showToast('❌ فشل قراءة الملف — تأكد من صحة صيغة JSON', '#e74c3c');
+    }
+    event.target.value = ''; // reset input so same file can be re-imported
+  };
+  reader.readAsText(file);
+}
+
+
+/* ══════════════════════════════════════════════════════
+   Authentication & Role System
+══════════════════════════════════════════════════════ */
+let currentUser     = null;  // Firebase user object
+let currentUserRole = null;  // 'admin' | 'teacher' | 'viewer'
+let currentUserName = '';
+
+// ── الصلاحيات ──────────────────────────────────────
+const ROLE_PERMISSIONS = {
+  admin:   { canEdit: true,  canDelete: true,  canManageUsers: true  },
+  teacher: { canEdit: true,  canDelete: false, canManageUsers: false },
+  viewer:  { canEdit: false, canDelete: false, canManageUsers: false }
+};
+
+function can(action) {
+  if (!currentUserRole) return false;
+  return ROLE_PERMISSIONS[currentUserRole]?.[action] || false;
+}
+
+// ── تطبيق الصلاحيات على الواجهة ───────────────────
+function applyRoleUI() {
+  const canEdit   = can('canEdit');
+  const canDelete = can('canDelete');
+  const isAdmin   = currentUserRole === 'admin';
+
+  // أزرار الإضافة والتعديل والحذف
+  document.querySelectorAll('.no-print.btn-edit, .btn-edit').forEach(b => {
+    b.style.display = canEdit ? '' : 'none';
+  });
+  document.querySelectorAll('.btn-danger').forEach(b => {
+    b.style.display = canDelete ? '' : 'none';
+  });
+  document.querySelectorAll('.add-student-section').forEach(s => {
+    s.style.display = canEdit ? '' : 'none';
+  });
+  document.querySelectorAll('.actions-bar').forEach(b => {
+    b.style.display = canEdit ? '' : 'none';
+  });
+  // حقول التقرير (المعلم والأسبوع)
+  document.querySelectorAll('#teacher-name, #supervisor-name, #week-number, #week-start, #week-end').forEach(f => {
+    f.disabled = !canEdit;
+    f.style.opacity = canEdit ? '1' : '0.6';
+  });
+  // تيكات الحضور ودرجات الأجزاء
+  document.querySelectorAll('.cell-check, .score-input, .part-check, .pscore').forEach(el => {
+    el.disabled = !canEdit;
+  });
+
+  // شريط المستخدم
+  const bar = document.getElementById('user-bar');
+  if (bar) {
+    bar.style.display = 'flex';
+    document.getElementById('user-bar-name').textContent  = currentUserName || currentUser?.email || '—';
+    const roleBadge  = document.getElementById('user-bar-role');
+    const roleLabels = { admin: 'مشرف', teacher: 'معلم', viewer: 'مساعد' };
+    roleBadge.textContent  = roleLabels[currentUserRole] || '';
+    roleBadge.className    = 'role-badge role-' + currentUserRole;
+    document.getElementById('user-bar-action').textContent = isAdmin ? '⚙️ إدارة' : '🚪 خروج';
+  }
+}
+
+// ── وضع الشاشة: login | register ──────────────────
+let authMode = 'login';
+
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  const isReg = authMode === 'register';
+  document.getElementById('auth-name-field').style.display   = isReg ? '' : 'none';
+  document.getElementById('auth-login-btn').style.display    = isReg ? 'none' : '';
+  document.getElementById('auth-register-btn').style.display = isReg ? '' : 'none';
+  document.getElementById('auth-sub-text').textContent = isReg ? 'أنشئ حسابك — المشرف سيعيّن صلاحيتك' : 'سجّل دخولك للمتابعة';
+  document.getElementById('auth-toggle-text').textContent    = isReg ? 'لديك حساب بالفعل؟' : 'ليس لديك حساب؟';
+  document.getElementById('auth-toggle-btn').textContent     = isReg ? 'تسجيل الدخول' : 'إنشاء حساب جديد';
+  document.getElementById('auth-error').classList.remove('show');
+  document.getElementById('auth-pending-msg').style.display  = 'none';
+}
+
+// ── انتظار Firebase (للجوال الذي قد يكون بطيئاً) ──
+async function _waitForFirebase(maxMs = 8000) {
+  // إذا كان متصلاً بالفعل، ارجع فوراً
+  if (window._firebaseReady && window._auth) return true;
+  return new Promise(resolve => {
+    const deadline = setTimeout(() => resolve(window._firebaseReady && !!window._auth), maxMs);
+    document.addEventListener('firebase-ready', function handler() {
+      document.removeEventListener('firebase-ready', handler);
+      clearTimeout(deadline);
+      resolve(window._firebaseReady && !!window._auth);
+    });
+  });
+}
+
+// ── تسجيل الدخول ──────────────────────────────────
+async function doLogin() {
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl    = document.getElementById('auth-error');
+  const btn      = document.getElementById('auth-login-btn');
+
+  errEl.classList.remove('show');
+  if (!email || !password) {
+    errEl.textContent = 'يرجى إدخال البريد الإلكتروني وكلمة المرور';
+    errEl.classList.add('show'); return;
+  }
+
+  // انتظر Firebase إن لم يكن جاهزاً بعد
+  if (!window._firebaseReady || !window._auth) {
+    btn.disabled = true;
+    btn.textContent = 'جارٍ الاتصال...';
+    const ok = await _waitForFirebase(8000);
+    btn.disabled = false;
+    btn.textContent = 'تسجيل الدخول';
+    if (!ok || !window._auth) {
+      errEl.textContent = 'تعذّر الاتصال بـ Firebase — تحقق من الإنترنت وأعد المحاولة';
+      errEl.classList.add('show'); return;
+    }
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'جارٍ التحقق...';
+
+  try {
+    const cred = await window._auth.signInWithEmailAndPassword(email, password);
+    btn.disabled = false;
+    btn.textContent = 'تسجيل الدخول';
+    onLoginSuccess(cred.user); // بدون await — فوري
+  } catch(e) {
+    const msgs = {
+      'auth/user-not-found':    'البريد الإلكتروني غير مسجّل',
+      'auth/wrong-password':    'كلمة المرور غير صحيحة',
+      'auth/invalid-email':     'صيغة البريد الإلكتروني غير صحيحة',
+      'auth/too-many-requests': 'محاولات كثيرة — حاول لاحقاً',
+      'auth/invalid-credential':'البريد أو كلمة المرور غير صحيحة',
+      'auth/network-request-failed': 'لا يوجد اتصال بالإنترنت'
+    };
+    errEl.textContent = msgs[e.code] || ('خطأ: ' + e.message);
+    errEl.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'تسجيل الدخول';
+  }
+}
+
+// ── إنشاء حساب جديد (تسجيل ذاتي) ─────────────────
+async function doRegister() {
+  const name     = document.getElementById('auth-name').value.trim();
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl    = document.getElementById('auth-error');
+  const btn      = document.getElementById('auth-register-btn');
+
+  errEl.classList.remove('show');
+  if (!name || !email || !password) {
+    errEl.textContent = 'يرجى ملء جميع الحقول';
+    errEl.classList.add('show'); return;
+  }
+  if (password.length < 6) {
+    errEl.textContent = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+    errEl.classList.add('show'); return;
+  }
+  // انتظر Firebase إن لم يكن جاهزاً
+  if (!window._firebaseReady || !window._auth) {
+    btn.disabled = true;
+    btn.textContent = 'جارٍ الاتصال...';
+    const ok = await _waitForFirebase(8000);
+    btn.disabled = false;
+    btn.textContent = 'إنشاء الحساب';
+    if (!ok || !window._auth) {
+      errEl.textContent = 'تعذّر الاتصال بـ Firebase — تحقق من الإنترنت';
+      errEl.classList.add('show'); return;
+    }
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'جارٍ الإنشاء...';
+
+  try {
+    const cred = await window._auth.createUserWithEmailAndPassword(email, password);
+    const uid  = cred.user.uid;
+
+    // حفظ بيانات المستخدم في Firestore بصلاحية viewer (ينتظر المشرف)
+    await window._db.collection('users').doc(uid).set({
+      uid, email, name, role: 'viewer', createdAt: new Date().toISOString()
+    });
+
+    // تسجيل خروج فوري — لن يدخل حتى يعيّن المشرف صلاحيته
+    await window._auth.signOut();
+
+    // أظهر رسالة النجاح
+    btn.style.display = 'none';
+    document.getElementById('auth-name-field').style.display = 'none';
+    document.getElementById('auth-email').value = '';
+    document.getElementById('auth-password').value = '';
+    document.getElementById('auth-name').value = '';
+    document.getElementById('auth-toggle-btn').style.display = 'none';
+    document.getElementById('auth-pending-msg').style.display = 'block';
+
+  } catch(e) {
+    const msgs = {
+      'auth/email-already-in-use': 'هذا البريد مسجّل مسبقاً',
+      'auth/invalid-email':        'صيغة البريد غير صحيحة',
+      'auth/weak-password':        'كلمة المرور ضعيفة جداً'
+    };
+    errEl.textContent = msgs[e.code] || ('خطأ: ' + e.message);
+    errEl.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'إنشاء الحساب';
+  }
+}
+
+// ── بعد نجاح تسجيل الدخول ────────────────────────
+async function onLoginSuccess(user) {
+  currentUser     = user;
+  currentUserRole = 'admin';
+  currentUserName = user.displayName || user.email || 'مستخدم';
+
+  // أخفِ شاشة الدخول وأظهر التطبيق فوراً — بدون انتظار Firestore
+  document.getElementById('auth-screen').classList.add('hidden');
+  applyRoleUI();
+  updateFirebaseStatusBar();
+
+  // حفظ/تحديث بيانات المستخدم في Firestore في الخلفية (لا ينتظر)
+  if (window._firebaseReady && window._db) {
+    window._db.collection('users').doc(user.uid).set({
+      uid: user.uid,
+      email: user.email || '',
+      name: user.displayName || user.email || '',
+      role: 'admin',
+      lastLogin: new Date().toISOString()
+    }, { merge: true }).catch(() => {});
+  }
+}
+
+// ── تسجيل الخروج ──────────────────────────────────
+async function doLogout() {
+  if (!confirm('هل تريد تسجيل الخروج؟')) return;
+  try {
+    if (window._auth) await window._auth.signOut();
+  } catch(e) { console.warn('signOut error:', e.message); }
+  // إعادة ضبط الحالة
+  currentUser = null;
+  currentUserRole = null;
+  currentUserName = '';
+  // لا نعيد _authListenerStarted — onAuthStateChanged سيتعامل مع الخروج تلقائياً
+  document.getElementById('user-bar').style.display = 'none';
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-login-btn').disabled = false;
+  document.getElementById('auth-login-btn').textContent = 'تسجيل الدخول';
+  document.getElementById('auth-error').classList.remove('show');
+  document.getElementById('auth-screen').classList.remove('hidden');
+}
+
+// ── استمرار الجلسة تلقائياً ──────────────────────
+let _authListenerStarted = false;
+async function initAuthListener() {
+  if (_authListenerStarted) return;
+
+  if (!window._firebaseReady || !window._auth) {
+    // أظهر رسالة الانتظار بدلاً من الخطأ
+    const warn = document.getElementById('auth-firebase-warn');
+    if (warn) { warn.style.display = 'block'; }
+    document.getElementById('auth-screen').classList.remove('hidden');
+    return;
+  }
+
+  _authListenerStarted = true;
+  // أخفِ أي رسالة انتظار
+  const warn = document.getElementById('auth-firebase-warn');
+  if (warn) warn.style.display = 'none';
+
+  return new Promise(resolve => {
+    let resolved = false;
+    window._auth.onAuthStateChanged(async function(user) {
+      if (user) {
+        await onLoginSuccess(user);
+      } else {
+        currentUser = null;
+        currentUserRole = null;
+        currentUserName = '';
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('user-bar').style.display = 'none';
+      }
+      if (!resolved) {
+        resolved = true;
+        resolve();
+      }
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   إدارة المستخدمين (مشرف فقط)
+══════════════════════════════════════════════════════ */
+async function openUsersModal() {
+  if (currentUserRole !== 'admin') return;
+  document.getElementById('users-modal-overlay').classList.add('open');
+  await loadUsersList();
+}
+
+function closeUsersModal() {
+  document.getElementById('users-modal-overlay').classList.remove('open');
+}
+
+async function loadUsersList() {
+  const tbody = document.getElementById('um-list');
+  tbody.innerHTML = '<tr><td colspan="4">جارٍ التحميل...</td></tr>';
+  try {
+    const snap = await window._db.collection('users').get();
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4">لا يوجد مستخدمون بعد</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const u = d.data();
+      const isSelf = currentUser && d.id === currentUser.uid;
+      const roleLabels = { admin: 'مشرف', teacher: 'معلم', viewer: 'مساعد' };
+      return `<tr${u.role === 'viewer' && !isSelf ? ' style="background:#fffde7"' : ''}>
+        <td>${u.name || '—'}${isSelf ? ' <span style="font-size:0.7rem;color:var(--muted)">(أنت)</span>' : ''}</td>
+        <td style="direction:ltr;font-size:0.75rem">${u.email || '—'}</td>
+        <td>
+          <select onchange="changeUserRole('${d.id}', this.value)"
+            style="padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-family:'Cairo',sans-serif;font-size:0.75rem;background:var(--bg)"
+            ${isSelf ? 'disabled' : ''}>
+            <option value="viewer"  ${u.role==='viewer'  ?'selected':''}>مساعد</option>
+            <option value="teacher" ${u.role==='teacher' ?'selected':''}>معلم</option>
+            <option value="admin"   ${u.role==='admin'   ?'selected':''}>مشرف</option>
+          </select>
+        </td>
+        <td>${isSelf ? '—' : `<button class="um-del" onclick="deleteUser('${d.id}','${u.email}')">🗑️</button>`}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="4">خطأ في التحميل</td></tr>';
+  }
+}
+
+async function changeUserRole(uid, newRole) {
+  try {
+    await window._db.collection('users').doc(uid).update({ role: newRole });
+    const labels = { admin: 'مشرف', teacher: 'معلم', viewer: 'مساعد' };
+    showToast(`✅ تم تغيير الصلاحية إلى "${labels[newRole]}"`);
+  } catch(e) {
+    alert('خطأ في تغيير الصلاحية: ' + e.message);
+    await loadUsersList(); // أعد تحميل لإعادة القيمة القديمة
+  }
+}
+
+async function createUser() {
+  const email    = document.getElementById('um-email').value.trim();
+  const password = document.getElementById('um-password').value;
+  const name     = document.getElementById('um-name').value.trim();
+  const role     = document.getElementById('um-role').value;
+
+  if (!email || !password || !name) { alert('يرجى ملء جميع الحقول'); return; }
+  if (password.length < 6) { alert('كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return; }
+
+  try {
+    // إنشاء المستخدم في Firebase Auth
+
+    // نستخدم تطبيق ثانوي مؤقت لتجنب تسجيل خروج المشرف الحالي
+
+    const savedConfig = JSON.parse(localStorage.getItem('fb_config') || 'null');
+    const cfg = savedConfig || (typeof FIREBASE_CONFIG !== 'undefined' ? FIREBASE_CONFIG : null);
+    if (!cfg) { alert('لا يمكن إنشاء مستخدم — إعدادات Firebase غير متوفرة'); return; }
+
+    const tempApp  = initializeApp(cfg, 'temp-create-' + Date.now());
+    const tempAuth = tempApp.auth();
+    const cred = await tempAuth.createUserWithEmailAndPassword(email, password);
+    const uid      = cred.user.uid;
+    await tempAuth.signOut().catch(() => {});
+
+    // حفظ بيانات المستخدم في Firestore
+    await window._db.collection('users').doc(uid).set({
+      uid, email, name, role, createdAt: new Date().toISOString()
+    });
+
+    document.getElementById('um-email').value = '';
+    document.getElementById('um-password').value = '';
+    document.getElementById('um-name').value = '';
+    showToast(`✅ تم إنشاء حساب "${name}" بنجاح`);
+    await loadUsersList();
+  } catch(e) {
+    const msgs = {
+      'auth/email-already-in-use': 'هذا البريد مسجّل مسبقاً',
+      'auth/invalid-email': 'صيغة البريد غير صحيحة',
+      'auth/weak-password': 'كلمة المرور ضعيفة جداً'
+    };
+    alert(msgs[e.code] || 'خطأ: ' + e.message);
+  }
+}
+
+async function deleteUser(uid, email) {
+  if (!confirm(`حذف المستخدم "${email}"؟\nسيُحذف من قاعدة البيانات فقط.`)) return;
+  try {
+    await window._db.collection('users').doc(uid).delete();
+    showToast('🗑️ تم حذف المستخدم من قاعدة البيانات', '#e74c3c');
+    await loadUsersList();
+  } catch(e) {
+    alert('خطأ في الحذف: ' + e.message);
+  }
+}
+
+/* ══════════════════════════════
+   Init
+══════════════════════════════ */
+async function initApp() {
+  // تعيين تواريخ الأسبوع الافتراضية
+  if (!document.getElementById('week-start').value) {
+    const h = todayHijri();
+    document.getElementById('week-start').value = formatHijri(h.y, h.m, h.d);
+  }
+  if (!document.getElementById('week-end').value) {
+    const gToday = new Date();
+    const thu = new Date(gToday);
+    thu.setDate(gToday.getDate() + (4 - gToday.getDay() + 7) % 7);
+    const hThu = gregorianToHijri(thu.getFullYear(), thu.getMonth()+1, thu.getDate());
+    document.getElementById('week-end').value = formatHijri(hThu.y, hThu.m, hThu.d);
+  }
+
+  // شغّل Auth ثم حمّل البيانات
+  initAuthListener(); // بدون await — لا تحجب التطبيق
+  await loadAll();
+  applyToolbar();
+  renderPartsTable();
+
+  const archiveData = getArchive();
+  if (archiveData.length > 0) {
+    document.getElementById('archive-panel').style.display = 'block';
+  }
+}
+
+// ══ نقطة التشغيل الوحيدة ══
+let _appInited = false;
+async function _runInitOnce() {
+  if (_appInited) return;
+  _appInited = true;
+  await initApp();
+}
+
+// ── انتظر Firebase ثم ابدأ التطبيق ──────────────────────────────
+// الـ <script type="module"> يعمل دائماً بعد DOMContentLoaded،
+// لذلك نستخدم polling بسيطاً بدلاً من الاعتماد على الأحداث.
+document.addEventListener('DOMContentLoaded', function() {
+  var _fbCheckCount = 0;
+  var _fbCheckMax   = 80; // 80 x 100ms = 8 ثوانٍ كحد أقصى
+
+  function _waitAndStart() {
+    _fbCheckCount++;
+    if (window._firebaseReady && window._auth && window._db) {
+      _runInitOnce();
+    } else if (_fbCheckCount >= _fbCheckMax) {
+      console.warn('Firebase لم يتصل خلال 8 ثوانٍ - سيعمل التطبيق محلياً');
+      _runInitOnce();
+    } else {
+      setTimeout(_waitAndStart, 100);
+    }
+  }
+
+  setTimeout(_waitAndStart, 100);
+});
+
+function addStudentFromParts() {
+  const name = document.getElementById('parts-new-name').value.trim();
+  const from = document.getElementById('parts-page-from').value;
+  const to   = document.getElementById('parts-page-to').value;
+  if (!name) { showToast('⚠️ الرجاء إدخال اسم الطالب', '#e74c3c'); return; }
+  const student = {
+    id: Date.now(),
+    name,
+    pageFrom: from || '',
+    pageTo:   to   || '',
+    pages: from && to ? from + ' الى ' + to : (from || to || ''),
+    joinDate: new Date().toISOString(),
+    notes: '',
+    completedText:  '',
+    completedFrom:  '',
+    completedTo:    '',
+    completedPages: '',
+    days: makeFreshDays()
+  };
+  students.push(student);
+  document.getElementById('parts-new-name').value = '';
+  document.getElementById('parts-page-from').value = '';
+  document.getElementById('parts-page-to').value   = '';
+  saveStudents();
+  renderPartsTable();
+  showToast('✅ تمت إضافة "' + name + '"');
+}
+
+function exportStudentPDF(sid) {
+  const s = students.find(st => st.id === sid);
+  if (!s) return;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  // دعم العربية بالعكس (jsPDF لا يدعم العربية natively — نعكس النص)
+  function ar(text) {
+    // إعادة النص كما هو؛ سيظهر من اليسار لليمين في PDF لكن المحتوى واضح
+    return String(text);
+  }
+
+  // تاريخ التقرير: من حقلَي الأسبوع، وإلا تاريخ اليوم
+  const weekStart  = document.getElementById('week-start')?.value  || '';
+  const weekEnd    = document.getElementById('week-end')?.value    || '';
+  const weekNumber = document.getElementById('week-number')?.value || '';
+  const reportDate = weekStart && weekEnd
+    ? weekStart + ' - ' + weekEnd
+    : new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const data = getPartsData();
+  const sData = data[sid] || {};
+  const st = calcStudentPartStats(sData);
+
+  // ── العنوان ──
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('Student Parts Report', 105, 18, { align: 'center' });
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Student: ' + s.name, 15, 30);
+  doc.text('Date: ' + reportDate, 15, 38);
+  if (weekNumber) doc.text('Week: ' + weekNumber, 15, 46);
+  const extraY = weekNumber ? 54 : 46;
+  if (s.pages) doc.text('Pages: ' + s.pages, 15, extraY);
+
+  const statsY = Math.max(56, extraY + 8);
+  doc.setFontSize(10);
+  doc.text('Completed Parts: ' + st.done + ' / 30', 15, statsY);
+  doc.text('Average Score: ' + (st.avg !== null ? st.avg.toFixed(1) : 'N/A'), 80, statsY);
+  doc.text('Progress: ' + st.pct + '%', 150, statsY);
+
+  doc.setLineWidth(0.5);
+  doc.line(15, statsY + 4, 195, statsY + 4);
+
+  // ── الجدول ──
+  const tableRows = [];
+  for (let j = 1; j <= JUZAAT; j++) {
+    const jData = sData['j' + j] || { done: false, score: '' };
+    tableRows.push([
+      'Juz ' + j,
+      jData.done ? 'Done' : 'Not done',
+      jData.score !== '' && jData.score !== undefined ? String(jData.score) : '—'
+    ]);
+  }
+
+  doc.autoTable({
+    startY: statsY + 8,
+    head: [['Part', 'Status', 'Score']],
+    body: tableRows,
+    styles: {
+      font: 'helvetica',
+      fontSize: 9,
+      cellPadding: 3,
+      halign: 'center'
+    },
+    headStyles: {
+      fillColor: [26, 60, 94],
+      textColor: 255,
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: { fillColor: [244, 241, 235] },
+    columnStyles: {
+      0: { cellWidth: 30 },
+      1: { cellWidth: 80, halign: 'center' },
+      2: { cellWidth: 40, halign: 'center' }
+    },
+    didParseCell: function(data) {
+      if (data.section === 'body' && data.column.index === 1) {
+        if (data.cell.raw === 'Done') {
+          data.cell.styles.textColor = [39, 174, 96];
+          data.cell.styles.fontStyle = 'bold';
+        } else {
+          data.cell.styles.textColor = [150, 150, 150];
+        }
+      }
+    }
+  });
+
+  // ── تذييل ──
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text('Page ' + i + ' of ' + pageCount, 105, 290, { align: 'center' });
+  }
+
+  doc.save(s.name + '-parts-report.pdf');
+  showToast('✅ تم تصدير PDF للطالب ' + s.name);
+}
+function printWeeklyReport() {
+  const weekStart  = document.getElementById('week-start')?.value  || '';
+  const weekEnd    = document.getElementById('week-end')?.value    || '';
+  const weekNumber = document.getElementById('week-number')?.value || '';
+  const teacherName = document.getElementById('teacher-name')?.value || '';
+  const printDate  = new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+  const dateRange  = weekStart && weekEnd ? weekStart + ' — ' + weekEnd : printDate;
+
+  let studentsHTML = '';
+  students.forEach(s => {
+    const { pass, excuse, fail, pct } = calcStats(s);
+    const perfLabel = pct >= 80 ? 'ممتاز' : pct >= 50 ? 'متوسط' : 'يحتاج متابعة';
+
+    let daysRows = DAYS.map(day => {
+      const cells = COLS.map(col => {
+        const v = cellVal(s.days && s.days[day] ? s.days[day][col] : false);
+        const color = v === true ? '#1e8449' : v === 'excuse' ? '#1a6a9a' : '#c0392b';
+        const txt   = v === true ? '✓' : v === 'excuse' ? 'عذر' : '✗';
+        return `<td style="text-align:center;color:${color};font-weight:700;border:1px solid #ccc;padding:5px 8px">${txt}</td>`;
+      }).join('');
+      return `<tr><td style="border:1px solid #ccc;padding:5px 8px;font-weight:600">${day}</td>${cells}</tr>`;
+    }).join('');
+
+    const pages = (s.completedFrom && s.completedTo)
+      ? `من ص${s.completedFrom} إلى ص${s.completedTo}`
+      : s.completedPages ? `${s.completedPages} صفحة` : '—';
+
+    studentsHTML += `
+      <div style="margin-bottom:24px;border:1.5px solid #1a3c5e;border-radius:10px;overflow:hidden;page-break-inside:avoid">
+        <div style="background:#1a3c5e;color:white;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+          <span style="font-size:1rem;font-weight:700">${s.name}</span>
+          <span style="font-size:0.85rem;opacity:0.85">${s.pages ? 'الصفحات: ' + s.pages : ''}</span>
+          <span style="background:#c8a94e;padding:3px 10px;border-radius:20px;font-size:0.8rem;font-weight:700">${pct}% — ${perfLabel}</span>
+        </div>
+        <div style="padding:12px 16px">
+          <table style="width:100%;border-collapse:collapse;font-size:0.88rem;direction:rtl">
+            <thead>
+              <tr style="background:#f4f1eb">
+                <th style="border:1px solid #ccc;padding:6px 8px">اليوم</th>
+                ${COLS.map(c => `<th style="border:1px solid #ccc;padding:6px 8px;text-align:center">${c}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>${daysRows}</tbody>
+          </table>
+          <div style="margin-top:10px;display:flex;gap:16px;font-size:0.82rem;flex-wrap:wrap">
+            <span>✓ حضر: <strong>${pass}</strong></span>
+            <span>✗ غاب: <strong>${fail}</strong></span>
+            ${excuse > 0 ? `<span>عذر: <strong>${excuse}</strong></span>` : ''}
+            <span>📖 المُنجز: <strong>${pages}</strong></span>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  const container = document.getElementById('student-print-area');
+  container.innerHTML = `
+    <div style="font-family:'Cairo',Arial,sans-serif;direction:rtl;padding:20px;color:#1a1a2e;max-width:900px;margin:0 auto">
+      <div style="text-align:center;background:#1a3c5e;color:white;padding:20px;border-radius:10px;margin-bottom:20px">
+        <h1 style="font-size:1.4rem;margin-bottom:6px">📋 التقرير الأسبوعي للطلاب</h1>
+        ${weekNumber ? `<div style="font-size:0.9rem;opacity:0.85">الأسبوع رقم: ${weekNumber}</div>` : ''}
+        <div style="font-size:0.9rem;opacity:0.85">${dateRange}</div>
+        ${teacherName ? `<div style="font-size:0.9rem;opacity:0.85">المعلم: ${teacherName}</div>` : ''}
+      </div>
+      <div style="background:#f4f1eb;border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap;font-size:0.88rem">
+        <span>👥 عدد الطلاب: <strong>${students.length}</strong></span>
+        <span>🗓️ تاريخ الطباعة: <strong>${printDate}</strong></span>
+      </div>
+      ${studentsHTML}
+      <div style="text-align:center;margin-top:20px;font-size:0.78rem;color:#888;border-top:1px solid #ccc;padding-top:10px">
+        تم إنشاء هذا التقرير بتاريخ ${printDate}
+      </div>
+    </div>`;
+
+  setTimeout(function(){ window.print(); }, 150);
+}
+
+function printStudentReport(sid) {
+  const s = students.find(st => st.id === sid);
+  if (!s) return;
+
+  const data = getPartsData();
+  const sData = data[sid] || {};
+  const st = calcStudentPartStats(sData);
+
+  const printDate = new Date().toLocaleDateString('ar-SA', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  let tableRows = '';
+  for (let j = 1; j <= JUZAAT; j++) {
+    const jData = sData['j' + j] || { done: false, score: '' };
+    const statusText  = jData.done ? 'تم' : 'لم يتم';
+    const statusColor = jData.done ? '#1e8449' : '#c0392b';
+    const scoreText   = (jData.score !== '' && jData.score !== undefined) ? jData.score : '—';
+    tableRows += `<tr>
+      <td>${j}</td>
+      <td>الجزء ${j}</td>
+      <td style="color:${statusColor};font-weight:700">${statusText}</td>
+      <td>${scoreText}</td>
+    </tr>`;
+  }
+
+  const container = document.getElementById('student-print-area');
+  container.innerHTML = `
+    <h1>تقرير الأجزاء</h1>
+    <div class="sp-meta">
+      <span><strong>اسم الطالب:</strong> ${s.name}</span>
+      <span><strong>تاريخ الطباعة:</strong> ${printDate}</span>
+      ${s.pages ? `<span><strong>الصفحات:</strong> ${s.pages}</span>` : ''}
+    </div>
+    <table class="sp-table">
+      <thead><tr><th>#</th><th>الجزء</th><th>الحالة</th><th>درجة العرض</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    <div class="sp-summary">
+      <div><strong>الأجزاء المكتملة:</strong> ${st.done} / ${JUZAAT}</div>
+      <div><strong>متوسط الدرجات:</strong> ${st.avg !== null ? st.avg.toFixed(1) : '—'}</div>
+      <div><strong>نسبة الإنجاز:</strong> ${st.pct}%</div>
+    </div>
+    <div class="sp-footer">تم إنشاء هذا التقرير بتاريخ ${printDate}</div>
+  `;
+
+  setTimeout(function(){ window.print(); }, 100);
+}
+
+// ── إدارة واجهة Firebase ──────────────────────────────
+
+function updateFirebaseStatusBar() {
+  const bar  = document.getElementById('firebase-status-bar');
+  const text = document.getElementById('firebase-status-text');
+  if (!bar || !text) return;
+  if (window._firebaseReady) {
+    bar.className    = 'fb-ready';
+    text.textContent = 'Firebase: متصل ✓';
+    bar.title        = 'Firebase متصل تلقائياً';
+    bar.style.cursor = 'default';
+  } else {
+    bar.className    = 'fb-error';
+    text.textContent = 'Firebase: جارٍ الاتصال...';
+    bar.title        = 'يرجى الانتظار';
+  }
+}
+
+function _getFirebaseSavedConfig() {
+  try { return JSON.parse(localStorage.getItem('fb_config') || 'null'); } catch(e) { return null; }
+}
+
+function openFirebaseModal() {
+  const saved = _getFirebaseSavedConfig();
+  if (saved) {
+    ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'].forEach(k => {
+      const el = document.getElementById('fb-input-' + k);
+      if (el) el.value = saved[k] || '';
+    });
+  }
+  document.getElementById('firebase-modal-overlay').classList.add('open');
+}
+
+function closeFirebaseModal() {
+  document.getElementById('firebase-modal-overlay').classList.remove('open');
+}
+
+async function saveFirebaseConfig() {
+  // Firebase مدمج ومتصل تلقائياً — هذه الدالة للحالات الطارئة فقط
+  if (window._firebaseReady && window._db && window._auth) {
+    closeFirebaseModal();
+    updateFirebaseStatusBar();
+    showToast('✅ Firebase متصل بالفعل');
+    return;
+  }
+  // إعادة المحاولة باستخدام compat
+  try {
+    if (!firebase.apps.length) {
+      const savedCfg = JSON.parse(localStorage.getItem('fb_config') || 'null') || FIREBASE_CONFIG;
+      firebase.initializeApp(savedCfg);
+    }
+    window._auth = firebase.auth();
+    window._db   = firebase.firestore();
+    window._firebaseReady = true;
+    closeFirebaseModal();
+    updateFirebaseStatusBar();
+    showToast('✅ تم الاتصال بـ Firebase بنجاح');
+    _appInited = false;
+    _authListenerStarted = false;
+    await _runInitOnce();
+  } catch(e) {
+    window._firebaseReady = false;
+    updateFirebaseStatusBar();
+    alert('❌ فشل الاتصال: ' + e.message);
+  }
+}
+
+// تحديث شريط الحالة بعد اتصال Firebase
+document.addEventListener('DOMContentLoaded', function() {
+  var _sbCheck = 0;
+  function _checkStatus() {
+    updateFirebaseStatusBar();
+    if (!window._firebaseReady && _sbCheck < 80) {
+      _sbCheck++;
+      setTimeout(_checkStatus, 100);
+    }
+  }
+  setTimeout(_checkStatus, 200);
+});
+
+
+
+</script>
+
+<!-- منطقة الطباعة المخفية -->
+<div id="student-print-area"></div>
+
+<!-- ── شريط حالة Firebase ── -->
+<div id="firebase-status-bar" class="fb-not-set" title="حالة الاتصال بـ Firebase">
+  <span class="fb-dot"></span>
+  <span id="firebase-status-text">Firebase: جارٍ الاتصال...</span>
+</div>
+
+<!-- ── مودال إعداد Firebase ── -->
+<div id="firebase-modal-overlay">
+  <div id="firebase-modal">
+    <h2>🔥 إعداد Firebase</h2>
+    <p>أدخل بيانات مشروعك من <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a></p>
+    <div class="fb-instructions">
+      1. افتح <strong>console.firebase.google.com</strong><br>
+      2. أنشئ مشروعاً أو افتح موجوداً<br>
+      3. Project Settings ← General ← Your apps ← Web App<br>
+      4. انسخ القيم وألصقها هنا
+    </div>
+    <label>API Key</label>
+    <input id="fb-input-apiKey" type="text" placeholder="AIzaSy...">
+    <label>Auth Domain</label>
+    <input id="fb-input-authDomain" type="text" placeholder="your-app.firebaseapp.com">
+    <label>Project ID</label>
+    <input id="fb-input-projectId" type="text" placeholder="your-app-id">
+    <label>Storage Bucket</label>
+    <input id="fb-input-storageBucket" type="text" placeholder="your-app.appspot.com">
+    <label>Messaging Sender ID</label>
+    <input id="fb-input-messagingSenderId" type="text" placeholder="123456789">
+    <label>App ID</label>
+    <input id="fb-input-appId" type="text" placeholder="1:123:web:abc...">
+    <div class="fb-modal-btns">
+      <button class="fb-btn-close" onclick="closeFirebaseModal()">إلغاء</button>
+      <button class="fb-btn-save" onclick="saveFirebaseConfig()">💾 حفظ والاتصال</button>
+    </div>
+  </div>
+</div>
+</html>
